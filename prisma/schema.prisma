@@ -1,0 +1,191 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "sqlite"
+  url      = env("DATABASE_URL")
+}
+
+enum Role {
+  TEACHER
+  COORDINATOR
+  ADMIN
+  STUDENT
+}
+
+model User {
+  id           String   @id @default(cuid())
+  email        String   @unique
+  name         String
+  role         Role     @default(TEACHER)
+  department   String?
+  passwordHash String?
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+
+  taughtSlots     TimetableSlot[]     @relation("TeacherSlots")
+  bookingRequests BookingRequest[]
+  uploads         StudentListUpload[]
+  auditLogs       AuditLog[]
+}
+
+model Classroom {
+  id        String   @id @default(cuid())
+  name      String
+  building  String   @default("Main")
+  floor     Int      @default(1)
+  capacity  Int      @default(40)
+  isLab     Boolean  @default(false)
+  facilities String?
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  slots    TimetableSlot[]
+  blocks   RoomBlock[]
+  bookings BookingRequest[]
+}
+
+model Section {
+  id        String   @id @default(cuid())
+  code      String   @unique
+  name      String
+  year      Int      @default(1)
+  strength  Int      @default(0)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  slots       TimetableSlot[]
+  enrollments StudentSectionEnrollment[]
+}
+
+model Subject {
+  id        String   @id @default(cuid())
+  code      String?
+  name      String
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  slots TimetableSlot[]
+}
+
+enum SlotStatus {
+  SCHEDULED
+  CANCELLED
+  RESCHEDULED
+}
+
+model TimetableSlot {
+  id           String     @id @default(cuid())
+  classroomId  String
+  sectionId    String?
+  subjectId    String?
+  teacherId    String?
+  dayOfWeek    Int?
+  specificDate DateTime?
+  startTime    String
+  endTime      String
+  status       SlotStatus @default(SCHEDULED)
+  notes        String?
+  createdAt    DateTime   @default(now())
+  updatedAt    DateTime   @updatedAt
+
+  classroom Classroom @relation(fields: [classroomId], references: [id])
+  section   Section?  @relation(fields: [sectionId], references: [id])
+  subject   Subject?  @relation(fields: [subjectId], references: [id])
+  teacher   User?     @relation("TeacherSlots", fields: [teacherId], references: [id])
+}
+
+model RoomBlock {
+  id          String   @id @default(cuid())
+  classroomId String
+  startAt     DateTime
+  endAt       DateTime
+  reason      String?
+  createdAt   DateTime @default(now())
+
+  classroom Classroom @relation(fields: [classroomId], references: [id])
+}
+
+enum BookingStatus {
+  PENDING
+  APPROVED
+  REJECTED
+  CANCELLED
+}
+
+model BookingRequest {
+  id          String        @id @default(cuid())
+  classroomId String
+  requesterId String
+  dayOfWeek   Int?
+  startTime   String
+  endTime     String
+  status      BookingStatus @default(PENDING)
+  note        String?
+  createdAt   DateTime      @default(now())
+  updatedAt   DateTime      @updatedAt
+
+  classroom Classroom @relation(fields: [classroomId], references: [id])
+  requester User      @relation(fields: [requesterId], references: [id])
+}
+
+model Student {
+  id        String   @id @default(cuid())
+  rollNo    String   @unique
+  name      String
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  enrollments StudentSectionEnrollment[]
+}
+
+model StudentSectionEnrollment {
+  id        String   @id @default(cuid())
+  studentId String
+  sectionId String
+  createdAt DateTime @default(now())
+
+  student Student @relation(fields: [studentId], references: [id])
+  section Section @relation(fields: [sectionId], references: [id])
+
+  @@unique([studentId, sectionId])
+}
+
+model StudentListUpload {
+  id         String   @id @default(cuid())
+  uploaderId String?
+  fileName   String?
+  createdAt  DateTime @default(now())
+
+  uploader User? @relation(fields: [uploaderId], references: [id])
+}
+
+model VacancyEvent {
+  id        String   @id @default(cuid())
+  payload   String?
+  createdAt DateTime @default(now())
+}
+
+model EnrollmentDiff {
+  id        String   @id @default(cuid())
+  payload   String?
+  createdAt DateTime @default(now())
+}
+
+model ConsolidationProposal {
+  id        String   @id @default(cuid())
+  payload   String?
+  status    String   @default("PENDING")
+  createdAt DateTime @default(now())
+}
+
+model AuditLog {
+  id        String   @id @default(cuid())
+  userId    String?
+  action    String
+  details   String?
+  createdAt DateTime @default(now())
+
+  user User? @relation(fields: [userId], references: [id])
+}
