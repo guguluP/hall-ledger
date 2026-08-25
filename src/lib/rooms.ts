@@ -1,0 +1,31 @@
+/** Every hall that appears in the 1st-year 2025–26 workbook */
+export const FULL_TIMETABLE_ROOMS = [
+  "10",
+  "105",
+  "106",
+  "107",
+  "207",
+  "301",
+  "302",
+  "304",
+  "314",
+  "316",
+  "317",
+  "318",
+  "319",
+  "320",
+  "322",
+  "402",
+  "404",
+  "405",
+  "ME-01",
+  "ME-02",
+  "ME-03",
+  "ME-04",
+  "ME-101",
+  "ME-102",
+  "ME-103",
+  "ME-104",
+] as const;
+
+export type TimetableRoomName = (typeof FULL_TIMETABLE_ROOMS)[number];
