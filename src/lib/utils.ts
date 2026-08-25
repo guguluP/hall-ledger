@@ -5,24 +5,12 @@ export function cn(...inputs: ClassValue[]) {
   return twMerge(clsx(inputs));
 }
 
-export function formatTime(time: string) {
+export function formatTime(time: string): string {
+  // "09:30" -> "9:30 AM" style optional; keep short for grid
   return time;
 }
 
-export function timeToMinutes(time: string): number {
-  const [h, m] = time.split(":").map(Number);
-  return h * 60 + m;
-}
-
-export function rangesOverlap(
-  start1: string,
-  end1: string,
-  start2: string,
-  end2: string
-): boolean {
-  const s1 = timeToMinutes(start1);
-  const e1 = timeToMinutes(end1);
-  const s2 = timeToMinutes(start2);
-  const e2 = timeToMinutes(end2);
-  return s1 < e2 && s2 < e1;
+export function dayLabel(dayOfWeek: number): string {
+  const days = ["", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"];
+  return days[dayOfWeek] ?? String(dayOfWeek);
 }
