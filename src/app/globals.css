@@ -1,0 +1,134 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  :root {
+    /* Apple-inspired dark system — soft graphite, cool accent */
+    --color-bg: #000000;
+    --color-surface: #1c1c1e;
+    --color-elevated: #2c2c2e;
+    --color-fill: #3a3a3c;
+    --color-fg: #f5f5f7;
+    --color-muted: #98989d;
+    --color-subtle: #636366;
+    --color-border: rgba(255, 255, 255, 0.08);
+    --color-separator: rgba(255, 255, 255, 0.12);
+    --color-accent: #0a84ff;
+    --color-accent-fg: #ffffff;
+    --color-accent-soft: rgba(10, 132, 255, 0.18);
+    --color-danger: #ff453a;
+    --color-warn: #ffd60a;
+    --color-ok: #30d158;
+
+    /* shadcn HSL bridge */
+    --background: 0 0% 0%;
+    --foreground: 240 5% 96%;
+    --card: 240 3% 11%;
+    --card-foreground: 240 5% 96%;
+    --popover: 240 3% 11%;
+    --popover-foreground: 240 5% 96%;
+    --primary: 211 100% 52%;
+    --primary-foreground: 0 0% 100%;
+    --secondary: 240 3% 17%;
+    --secondary-foreground: 240 5% 96%;
+    --muted: 240 2% 45%;
+    --muted-foreground: 240 2% 60%;
+    --accent: 211 100% 52%;
+    --accent-foreground: 0 0% 100%;
+    --destructive: 3 100% 61%;
+    --destructive-foreground: 0 0% 100%;
+    --border: 0 0% 100% / 0.08;
+    --input: 0 0% 100% / 0.08;
+    --ring: 211 100% 52%;
+    --radius: 0.875rem;
+  }
+
+  * {
+    @apply border-border;
+  }
+
+  html {
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+    text-rendering: optimizeLegibility;
+  }
+
+  body {
+    background: var(--color-bg);
+    color: var(--color-fg);
+    font-family: var(--font-sans), -apple-system, BlinkMacSystemFont, "SF Pro Text",
+      "Segoe UI", ui-sans-serif, system-ui, sans-serif;
+    line-height: 1.47;
+    letter-spacing: -0.011em;
+  }
+
+  h1,
+  h2,
+  h3 {
+    font-family: var(--font-sans), -apple-system, BlinkMacSystemFont, "SF Pro Display",
+      sans-serif;
+    font-weight: 600;
+    letter-spacing: -0.022em;
+    line-height: 1.15;
+    text-wrap: balance;
+  }
+
+  button:not(:disabled),
+  [role="button"]:not(:disabled) {
+    cursor: pointer;
+  }
+
+  .scroll-touch {
+    -webkit-overflow-scrolling: touch;
+    overscroll-behavior-x: contain;
+  }
+}
+
+@layer utilities {
+  .bg-bg { background-color: var(--color-bg); }
+  .bg-surface { background-color: var(--color-surface); }
+  .bg-elevated { background-color: var(--color-elevated); }
+  .bg-fill { background-color: var(--color-fill); }
+  .text-fg { color: var(--color-fg); }
+  .text-muted { color: var(--color-muted); }
+  .text-subtle { color: var(--color-subtle); }
+  .text-accent { color: var(--color-accent); }
+  .text-ok { color: var(--color-ok); }
+  .text-warn { color: var(--color-warn); }
+  .text-danger { color: var(--color-danger); }
+  .border-border { border-color: var(--color-border); }
+  .border-separator { border-color: var(--color-separator); }
+  .bg-accent { background-color: var(--color-accent); }
+  .bg-accent-soft { background-color: var(--color-accent-soft); }
+  .text-accent-fg { color: var(--color-accent-fg); }
+  .font-display {
+    font-family: var(--font-sans), -apple-system, BlinkMacSystemFont, sans-serif;
+    font-weight: 600;
+    letter-spacing: -0.022em;
+  }
+  .glass {
+    background: rgba(28, 28, 30, 0.72);
+    backdrop-filter: saturate(180%) blur(20px);
+    -webkit-backdrop-filter: saturate(180%) blur(20px);
+  }
+  .glass-strong {
+    background: rgba(28, 28, 30, 0.88);
+    backdrop-filter: saturate(180%) blur(24px);
+    -webkit-backdrop-filter: saturate(180%) blur(24px);
+  }
+  .inset-group {
+    background: var(--color-surface);
+    border-radius: 12px;
+    overflow: hidden;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    transition-duration: 0.01ms !important;
+  }
+}
