@@ -79,6 +79,7 @@
     cursor: pointer;
   }
 
+  /* Smooth native-feeling scrolling */
   .scroll-touch {
     -webkit-overflow-scrolling: touch;
     overscroll-behavior-x: contain;
@@ -86,37 +87,74 @@
 }
 
 @layer utilities {
-  .bg-bg { background-color: var(--color-bg); }
-  .bg-surface { background-color: var(--color-surface); }
-  .bg-elevated { background-color: var(--color-elevated); }
-  .bg-fill { background-color: var(--color-fill); }
-  .text-fg { color: var(--color-fg); }
-  .text-muted { color: var(--color-muted); }
-  .text-subtle { color: var(--color-subtle); }
-  .text-accent { color: var(--color-accent); }
-  .text-ok { color: var(--color-ok); }
-  .text-warn { color: var(--color-warn); }
-  .text-danger { color: var(--color-danger); }
-  .border-border { border-color: var(--color-border); }
-  .border-separator { border-color: var(--color-separator); }
-  .bg-accent { background-color: var(--color-accent); }
-  .bg-accent-soft { background-color: var(--color-accent-soft); }
-  .text-accent-fg { color: var(--color-accent-fg); }
+  .bg-bg {
+    background-color: var(--color-bg);
+  }
+  .bg-surface {
+    background-color: var(--color-surface);
+  }
+  .bg-elevated {
+    background-color: var(--color-elevated);
+  }
+  .bg-fill {
+    background-color: var(--color-fill);
+  }
+  .text-fg {
+    color: var(--color-fg);
+  }
+  .text-muted {
+    color: var(--color-muted);
+  }
+  .text-subtle {
+    color: var(--color-subtle);
+  }
+  .text-accent {
+    color: var(--color-accent);
+  }
+  .text-ok {
+    color: var(--color-ok);
+  }
+  .text-warn {
+    color: var(--color-warn);
+  }
+  .text-danger {
+    color: var(--color-danger);
+  }
+  .border-border {
+    border-color: var(--color-border);
+  }
+  .border-separator {
+    border-color: var(--color-separator);
+  }
+  .bg-accent {
+    background-color: var(--color-accent);
+  }
+  .bg-accent-soft {
+    background-color: var(--color-accent-soft);
+  }
+  .text-accent-fg {
+    color: var(--color-accent-fg);
+  }
   .font-display {
     font-family: var(--font-sans), -apple-system, BlinkMacSystemFont, sans-serif;
     font-weight: 600;
     letter-spacing: -0.022em;
   }
+
+  /* Apple-style glass */
   .glass {
     background: rgba(28, 28, 30, 0.72);
     backdrop-filter: saturate(180%) blur(20px);
     -webkit-backdrop-filter: saturate(180%) blur(20px);
   }
+
   .glass-strong {
     background: rgba(28, 28, 30, 0.88);
     backdrop-filter: saturate(180%) blur(24px);
     -webkit-backdrop-filter: saturate(180%) blur(24px);
   }
+
+  /* Inset grouped list feel */
   .inset-group {
     background: var(--color-surface);
     border-radius: 12px;
