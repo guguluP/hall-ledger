@@ -21,6 +21,11 @@ type ParseSummary = {
   totalConflicts: number;
 };
 
+function isSpreadsheet(file: File) {
+  const n = file.name.toLowerCase();
+  return n.endsWith(".xlsx") || n.endsWith(".xls") || n.endsWith(".csv");
+}
+
 export default function TimetableUploadPage() {
   const [file, setFile] = useState<File | null>(null);
   const [status, setStatus] = useState<
@@ -31,23 +36,32 @@ export default function TimetableUploadPage() {
   const [parsePayload, setParsePayload] = useState<any>(null);
   const { items, push } = useToastStack();
 
-  const onDrop = useCallback((accepted: File[]) => {
-    if (accepted[0]) {
-      setFile(accepted[0]);
-      setStatus("idle");
-      setSummary(null);
-      setParsePayload(null);
-      setErrorMsg("");
+  const takeFile = useCallback((f: File | undefined) => {
+    if (!f) return;
+    if (!isSpreadsheet(f)) {
+      setErrorMsg("Only .xlsx, .xls or .csv files are supported");
+      return;
     }
+    setFile(f);
+    setStatus("idle");
+    setSummary(null);
+    setParsePayload(null);
+    setErrorMsg("");
   }, []);
 
+  const onDrop = useCallback(
+    (accepted: File[], rejected: { file: File }[]) => {
+      // Prefer accepted; if browser MIME reject still left a valid extension, use it
+      const f = accepted[0] || rejected[0]?.file;
+      takeFile(f);
+    },
+    [takeFile],
+  );
+
+  // No MIME accept map — that triggers WebKit "string did not match the expected pattern"
   const { getRootProps, getInputProps, isDragActive } = useDropzone({
     onDrop,
-    accept: {
-      "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet": [".xlsx"],
-      "application/vnd.ms-excel": [".xls"],
-      "text/csv": [".csv"],
-    },
+    multiple: false,
     maxFiles: 1,
   });
 
