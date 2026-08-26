@@ -1,4 +1,10 @@
 import { NextRequest, NextResponse } from "next/server";
+import { FULL_TIMETABLE_ROOMS } from "@/lib/rooms";
+import {
+  savePublished,
+  slotsFromParse,
+  roomsFromSlots,
+} from "@/lib/published-store";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -11,32 +17,38 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: "Missing parse payload" }, { status: 400 });
     }
 
-    try {
-      const { prisma } = await import("@/lib/prisma");
-      const sections = parse.sections ?? [];
-      const slots = parse.allSlots ?? [];
-      const count = await prisma.classroom.count().catch(() => 0);
-      return NextResponse.json({
-        message: count
-          ? `Publish received (${slots.length} slots).`
-          : `Publish accepted (${slots.length} slots). Add DATABASE_URL on Vercel to persist.`,
-        stats: {
-          sections: sections.length,
-          slots: slots.length,
-          classrooms: count,
-        },
-      });
-    } catch {
-      return NextResponse.json({
-        message: `Publish accepted (${(parse.allSlots ?? []).length} slots). Database not configured.`,
-        stats: {
-          sections: (parse.sections ?? []).length,
-          slots: (parse.allSlots ?? []).length,
-          classrooms: 0,
-        },
-      });
-    }
+    const slots = slotsFromParse(parse);
+    const rooms = roomsFromSlots(slots, FULL_TIMETABLE_ROOMS);
+    const sections =
+      parse.sections?.length ??
+      new Set(slots.map((s) => s.sectionName).filter(Boolean)).size;
+    const conflicts =
+      parse.hardConflicts?.length ?? parse.summary?.totalConflicts ?? 0;
+
+    const payload = {
+      publishedAt: new Date().toISOString(),
+      fileName: body.fileName as string | undefined,
+      slots,
+      rooms,
+      stats: {
+        sections: Number(sections) || 0,
+        slots: slots.length,
+        rooms: rooms.length,
+        roomsInUse: new Set(
+          slots.map((s) => s.classroomName).filter(Boolean),
+        ).size,
+        conflicts: Number(conflicts) || 0,
+      },
+    };
+
+    await savePublished(payload);
+
+    return NextResponse.json({
+      message: `Published ${payload.stats.slots} slots across ${payload.stats.sections} sections.`,
+      stats: payload.stats,
+    });
   } catch (e) {
+    console.error("[publish]", e);
     return NextResponse.json(
       { error: e instanceof Error ? e.message : "Publish failed" },
       { status: 500 },
