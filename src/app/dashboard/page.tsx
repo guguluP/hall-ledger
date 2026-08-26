@@ -18,11 +18,43 @@ import { Toggle } from "@/components/ui/toggle";
 export default function DashboardPage() {
   const [shown, setShown] = useState(false);
   const [labsOnly, setLabsOnly] = useState(false);
+  const [stats, setStats] = useState({
+    rooms: 26,
+    sections: 0,
+    slots: 0,
+    conflicts: 0,
+    source: "empty",
+  });
 
   useEffect(() => {
     const id = requestAnimationFrame(() => setShown(true));
     return () => cancelAnimationFrame(id);
   }, []);
+
+  useEffect(() => {
+    let cancelled = false;
+    (async () => {
+      try {
+        const res = await fetch("/api/timetable/grid");
+        const data = await res.json();
+        if (cancelled) return;
+        setStats({
+          rooms: data.stats?.rooms ?? data.rooms?.length ?? 26,
+          sections: data.stats?.sections ?? 0,
+          slots: data.stats?.slots ?? 0,
+          conflicts: data.stats?.conflicts ?? 0,
+          source: data.source ?? "empty",
+        });
+      } catch {
+        // keep defaults
+      }
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, []);
+
+  const hasData = stats.slots > 0;
 
   return (
     <AppShell
@@ -34,34 +66,37 @@ export default function DashboardPage() {
           shown ? "is-shown" : ""
         }`}
       >
-        <Stat label="Classrooms" value="26" sub="Full hall set" />
-        <Stat label="Sections" value="16" sub="1st year sheets" />
-        <Stat label="Conflicts" value="0" sub="After publish" ok />
-        <Stat label="Pending" value="—" sub="Extra class queue" />
+        <Stat label="Classrooms" value={String(stats.rooms)} sub="Full hall set" />
+        <Stat
+          label="Sections"
+          value={hasData ? String(stats.sections || "—") : "—"}
+          sub={hasData ? "Published" : "Upload to fill"}
+        />
+        <Stat
+          label="Slots"
+          value={hasData ? String(stats.slots) : "—"}
+          sub={hasData ? "In grid" : "Not published"}
+        />
+        <Stat
+          label="Conflicts"
+          value={hasData ? String(stats.conflicts) : "—"}
+          sub={hasData ? "Room overlaps" : "After publish"}
+          ok={hasData && stats.conflicts === 0}
+        />
       </div>
 
-      <div className="mb-6 flex items-center justify-between gap-3 rounded-2xl border border-border bg-surface px-4 py-3">
+      <div className="mb-6 flex items-center justify-between gap-3 rounded-[28px] border border-border bg-surface px-4 py-3">
         <div>
           <p className="text-[14px] font-semibold tracking-tight">Labs only</p>
-          <p className="text-[12px] text-muted">
-            Prefer lab rooms in vacancy search
-          </p>
+          <p className="text-[12px] text-muted">Prefer lab rooms in vacancy search</p>
         </div>
         <Toggle checked={labsOnly} onChange={setLabsOnly} label="Labs only" />
       </div>
 
       <div className="mb-8 grid gap-2.5 sm:grid-cols-3">
         <Quick href="/vacancy" title="Find free room" body="Search by day and time" />
-        <Quick
-          href="/timetable/upload"
-          title="Upload timetable"
-          body="Excel with all 16 sections"
-        />
-        <Quick
-          href="/students/upload"
-          title="Student list"
-          body="Drag-and-drop consolidation"
-        />
+        <Quick href="/timetable/upload" title="Upload timetable" body="Excel with all 16 sections" />
+        <Quick href="/students/upload" title="Student list" body="Drag-and-drop consolidation" />
       </div>
 
       <div className="grid gap-3 lg:grid-cols-2">
@@ -73,15 +108,23 @@ export default function DashboardPage() {
             </CardTitle>
           </CardHeader>
           <CardContent className="space-y-2.5">
-            <Note
-              tone="warn"
-              title="Upload the 2025–26 Excel"
-              detail="Publish after auto-resolve so vacancy search uses real occupancy."
-            />
+            {!hasData ? (
+              <Note
+                tone="warn"
+                title="Publish the 2025–26 Excel"
+                detail="Parse on Upload, then Publish so Grid and vacancy use real occupancy."
+              />
+            ) : (
+              <Note
+                tone="muted"
+                title="Timetable is live"
+                detail={`${stats.slots} slots across ${stats.rooms} halls. Open Grid to browse by day.`}
+              />
+            )}
             <Note
               tone="muted"
               title="Combined labs stay one slot"
-              detail="A1/A2 cells share a room. Review flags on the upload page if you need a second lab."
+              detail="A1/A2 cells share a room. Review flags on upload if you need a second lab."
             />
           </CardContent>
         </Card>
@@ -96,7 +139,7 @@ export default function DashboardPage() {
           <CardContent className="space-y-3 text-[14px] text-muted">
             <p className="flex items-start gap-2.5">
               <Upload className="mt-0.5 h-4 w-4 shrink-0 text-accent" strokeWidth={2} />
-              Parse all sheets → resolve hard room clashes → publish.
+              Parse all sheets → publish → grid fills.
             </p>
             <p className="flex items-start gap-2.5">
               <DoorOpen className="mt-0.5 h-4 w-4 shrink-0 text-accent" strokeWidth={2} />
@@ -104,7 +147,7 @@ export default function DashboardPage() {
             </p>
             <p className="flex items-start gap-2.5">
               <Users className="mt-0.5 h-4 w-4 shrink-0 text-accent" strokeWidth={2} />
-              Student lists drive consolidation proposals when enrollment drops.
+              Student lists drive consolidation when enrollment drops.
             </p>
           </CardContent>
         </Card>
@@ -125,7 +168,7 @@ function Stat({
   ok?: boolean;
 }) {
   return (
-    <div className="t-stagger-line t-stagger-line--1 rounded-2xl border border-border bg-surface px-4 py-3.5">
+    <div className="t-stagger-line t-stagger-line--1 rounded-[28px] border border-border bg-surface px-4 py-3.5">
       <p className="text-[12px] font-medium text-muted">{label}</p>
       <p
         className={`mt-1 text-[28px] font-semibold tabular-nums tracking-tight leading-none ${
@@ -151,7 +194,7 @@ function Quick({
   return (
     <Link
       href={href}
-      className="group flex items-center justify-between gap-3 rounded-2xl border border-border bg-surface px-4 py-4 transition-colors hover:bg-elevated"
+      className="group flex items-center justify-between gap-3 rounded-[28px] border border-border bg-surface px-4 py-4 transition-colors hover:bg-elevated"
     >
       <div>
         <p className="text-[15px] font-semibold tracking-tight text-fg">{title}</p>
@@ -173,7 +216,7 @@ function Note({
 }) {
   return (
     <div
-      className={`rounded-xl px-3.5 py-3 ${
+      className={`rounded-[20px] px-3.5 py-3 ${
         tone === "warn" ? "bg-accent-soft/40" : "bg-elevated"
       }`}
     >
