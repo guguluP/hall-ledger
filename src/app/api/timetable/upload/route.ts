@@ -4,25 +4,22 @@ import { detectHardConflicts } from "@/lib/hard-conflicts";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
+export const maxDuration = 30;
+
+const OK_EXT = /\.(xlsx|xlsm|xls|csv|tsv|ods|html|htm)$/i;
 
 export async function POST(req: NextRequest) {
   try {
     const formData = await req.formData();
     const file = formData.get("file") as File | null;
-    if (!file) {
-      return NextResponse.json({ error: "No file uploaded" }, { status: 400 });
+    if (!file) return NextResponse.json({ error: "No file uploaded" }, { status: 400 });
+    const name = file.name || "timetable.xlsx";
+    if (name.includes(".") && !OK_EXT.test(name)) {
+      return NextResponse.json({ error: "Use an Excel, CSV, TSV, ODS or HTML timetable (.xlsx .xlsm .xls .csv .tsv .ods)" }, { status: 400 });
     }
-
-    const name = (file.name || "").toLowerCase();
-    if (!name.endsWith(".xlsx") && !name.endsWith(".xls") && !name.endsWith(".csv")) {
-      return NextResponse.json(
-        { error: "Only .xlsx, .xls or .csv files are supported" },
-        { status: 400 },
-      );
-    }
-
     const buffer = await file.arrayBuffer();
-    let parseResult = parseTimetableWorkbook(buffer);
+    if (!buffer.byteLength) return NextResponse.json({ error: "File is empty" }, { status: 400 });
+    let parseResult = parseTimetableWorkbook(buffer, name);
     const hardConflicts = detectHardConflicts(parseResult.allSlots);
     parseResult = {
       ...parseResult,
@@ -30,27 +27,22 @@ export async function POST(req: NextRequest) {
       summary: {
         ...parseResult.summary,
         totalConflicts: hardConflicts.length,
-        totalSections:
-          parseResult.sections?.length ?? parseResult.summary?.totalSections ?? 0,
-        totalSlots:
-          parseResult.allSlots?.length ?? parseResult.summary?.totalSlots ?? 0,
+        totalSections: parseResult.sections?.length ?? parseResult.summary?.totalSections ?? 0,
+        totalSlots: parseResult.allSlots?.length ?? parseResult.summary?.totalSlots ?? 0,
       },
     };
-
-    return NextResponse.json({
-      parse: parseResult,
-      fileName: file.name,
-    });
+    if (!parseResult.allSlots.length) {
+      return NextResponse.json({
+        error: parseResult.warnings?.[0] || "Could not find day/time cells in this file.",
+        parse: parseResult,
+        fileName: name,
+      }, { status: 422 });
+    }
+    return NextResponse.json({ parse: parseResult, fileName: name });
   } catch (e) {
     console.error("[timetable/upload]", e);
-    return NextResponse.json(
-      {
-        error:
-          e instanceof Error
-            ? e.message
-            : "Could not parse workbook. Check it matches the 2025-26 multi-sheet format.",
-      },
-      { status: 500 },
-    );
+    return NextResponse.json({
+      error: e instanceof Error ? e.message : "Could not read this file. Try .xlsx, .xls, .csv or .ods with day names and time headings.",
+    }, { status: 500 });
   }
 }
