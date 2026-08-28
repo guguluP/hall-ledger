@@ -1,9 +1,12 @@
 /**
  * Published timetable store — works without Postgres on Vercel.
- * Uses globalThis + /tmp so Grid/Dashboard can read after Publish.
+ * Clients also cache the payload in localStorage (see client-cache.ts)
+ * because serverless instances do not share /tmp.
  */
 import { promises as fs } from "fs";
 import path from "path";
+import { buildingOf } from "./rooms";
+import { padTime } from "./time";
 
 export type PublishedSlot = {
   classroomName: string;
@@ -67,8 +70,8 @@ export function slotsFromParse(parse: any): PublishedSlot[] {
       sectionName: s.section ? String(s.section) : null,
       subjectName: s.subject || s.subjectRaw || null,
       dayOfWeek: typeof s.dayOfWeek === "number" ? s.dayOfWeek : null,
-      startTime: String(s.startTime || ""),
-      endTime: String(s.endTime || ""),
+      startTime: padTime(String(s.startTime || "")),
+      endTime: padTime(String(s.endTime || "")),
     }))
     .filter((s) => s.startTime && s.dayOfWeek != null);
 }
@@ -88,7 +91,7 @@ export function roomsFromSlots(
   return [...names]
     .map((name) => ({
       name,
-      building: name.toUpperCase().startsWith("ME") ? "Kautalya" : "Aryabhatta",
+      building: buildingOf(name),
       capacity: 60,
       usage: usage.get(name) || 0,
     }))
