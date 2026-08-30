@@ -1,8 +1,8 @@
 import { NextRequest, NextResponse } from "next/server";
 import { buildingOf, FULL_TIMETABLE_ROOMS } from "@/lib/rooms";
 import { loadPublished } from "@/lib/published-store";
-import { findFreeRooms } from "@/lib/occupancy";
-import { padTime, toMinutes } from "@/lib/time";
+import { findAvailability } from "@/lib/occupancy";
+import { normalizeWindow } from "@/lib/time";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -11,13 +11,14 @@ export async function GET(req: NextRequest) {
   try {
     const url = req.nextUrl;
     const day = Number(url.searchParams.get("day") || "1");
-    const start = padTime(url.searchParams.get("start") || "10:30");
-    const end = padTime(url.searchParams.get("end") || "12:30");
+    const startRaw = url.searchParams.get("start") || "10:30";
+    const endRaw = url.searchParams.get("end") || "12:30";
     const labsOnly = url.searchParams.get("labs") === "1";
 
-    if (toMinutes(end) <= toMinutes(start)) {
+    const win = normalizeWindow(startRaw, endRaw);
+    if (!win) {
       return NextResponse.json(
-        { error: "End time must be after start time." },
+        { error: "End time must be after start time. Afternoon hours are PM (5:30 = 5:30 PM)." },
         { status: 400 },
       );
     }
@@ -39,17 +40,19 @@ export async function GET(req: NextRequest) {
       capacity: typeof r.capacity === "number" ? r.capacity : 60,
     }));
 
-    const free = findFreeRooms(rooms, slots, day, start, end, labsOnly);
+    const { free, partial } = findAvailability(rooms, slots, day, win.start, win.end, labsOnly);
 
     return NextResponse.json({
       rooms: free,
+      partial,
       total: rooms.length,
       free: free.length,
-      occupied: rooms.length - free.length,
+      occupied: Math.max(0, rooms.length - free.length),
       source: slots.length > 0 ? "published" : "empty",
       day,
-      start,
-      end,
+      start: win.start,
+      end: win.end,
+      interpretedPm: win.interpretedPm,
     });
   } catch (e) {
     console.error("[vacancy]", e);
