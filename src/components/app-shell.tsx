@@ -12,12 +12,21 @@ import {
 import { cn } from "@/lib/utils";
 
 const NAV = [
-  { href: "/dashboard", label: "Home", icon: LayoutDashboard },
-  { href: "/vacancy", label: "Find", icon: DoorOpen },
-  { href: "/timetable", label: "Grid", icon: Calendar },
-  { href: "/students/upload", label: "Students", icon: Users },
-  { href: "/timetable/upload", label: "Upload", icon: ClipboardList },
+  { href: "/dashboard", label: "Home", icon: LayoutDashboard, match: "home" },
+  { href: "/vacancy", label: "Find", icon: DoorOpen, match: "find" },
+  { href: "/timetable", label: "Grid", icon: Calendar, match: "grid" },
+  { href: "/students", label: "Students", icon: Users, match: "students" },
+  { href: "/timetable/upload", label: "Upload", icon: ClipboardList, match: "upload" },
 ];
+
+function isActive(match: string, pathname: string) {
+  if (match === "home") return pathname === "/dashboard";
+  if (match === "find") return pathname === "/vacancy" || pathname.startsWith("/vacancy/");
+  if (match === "grid") return pathname === "/timetable" || pathname === "/grid";
+  if (match === "students") return pathname === "/students" || pathname.startsWith("/students/");
+  if (match === "upload") return pathname.startsWith("/timetable/upload");
+  return false;
+}
 
 export function AppShell({
   children,
@@ -34,7 +43,7 @@ export function AppShell({
     <div className="min-h-screen bg-bg text-fg">
       <header className="sticky top-0 z-40 border-b border-border glass-strong">
         <div className="mx-auto flex h-12 max-w-6xl items-center justify-between px-4 sm:h-14 sm:px-6">
-          <Link href="/" className="flex items-center gap-2.5">
+          <Link href="/" className="flex items-center gap-2.5" aria-label="Hall Ledger home">
             <span className="flex h-7 w-7 items-center justify-center rounded-[9px] bg-accent text-accent-fg shadow-sm">
               <DoorOpen className="h-3.5 w-3.5" strokeWidth={2.25} />
             </span>
@@ -43,14 +52,14 @@ export function AppShell({
             </span>
           </Link>
 
-          <nav className="hidden items-center gap-0.5 md:flex">
+          <nav className="hidden items-center gap-0.5 md:flex" aria-label="Primary">
             {NAV.map((item) => {
-              const active =
-                pathname === item.href || pathname.startsWith(item.href + "/");
+              const active = isActive(item.match, pathname);
               return (
                 <Link
                   key={item.href}
                   href={item.href}
+                  aria-current={active ? "page" : undefined}
                   className={cn(
                     "flex h-9 items-center gap-1.5 rounded-full px-3.5 text-[13px] font-medium transition-colors duration-150",
                     active
@@ -85,15 +94,15 @@ export function AppShell({
         {children}
       </main>
 
-      <nav className="fixed inset-x-0 bottom-0 z-40 border-t border-border glass-strong md:hidden">
+      <nav className="fixed inset-x-0 bottom-0 z-40 border-t border-border glass-strong md:hidden" aria-label="Primary">
         <div className="grid grid-cols-5 pb-[max(0.25rem,env(safe-area-inset-bottom))]">
           {NAV.map((item) => {
-            const active =
-              pathname === item.href || pathname.startsWith(item.href + "/");
+            const active = isActive(item.match, pathname);
             return (
               <Link
                 key={item.href}
                 href={item.href}
+                aria-current={active ? "page" : undefined}
                 className={cn(
                   "flex min-h-[3.25rem] flex-col items-center justify-center gap-0.5 text-[10px] font-medium",
                   active ? "text-accent" : "text-muted",

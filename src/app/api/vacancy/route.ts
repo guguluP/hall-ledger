@@ -42,13 +42,20 @@ export async function GET(req: NextRequest) {
 
     const { free, partial } = findAvailability(rooms, slots, day, win.start, win.end, labsOnly);
 
+    const source = !slots.length
+      ? "empty"
+      : published?.origin === "seed"
+        ? "seed"
+        : "published";
+
     return NextResponse.json({
       rooms: free,
       partial,
       total: rooms.length,
       free: free.length,
       occupied: Math.max(0, rooms.length - free.length),
-      source: slots.length > 0 ? "published" : "empty",
+      source,
+      fileName: published?.fileName ?? "",
       day,
       start: win.start,
       end: win.end,

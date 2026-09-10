@@ -7,7 +7,10 @@ import { AppShell } from "@/components/app-shell";
 import { Button } from "@/components/ui/button";
 import { DigitPop } from "@/components/ui/digit-pop";
 import { SlidingTabs } from "@/components/ui/sliding-tabs";
-import { FULL_TIMETABLE_ROOMS } from "@/lib/rooms";
+import { FULL_TIMETABLE_ROOMS, HALL_COUNT } from "@/lib/rooms";
+import { resolvePublished } from "@/lib/client-cache";
+import { buildTimeRows, findSlot, type OccupancySlot } from "@/lib/occupancy";
+import { labelTime } from "@/lib/time";
 
 const DAYS = [
   { value: 1, label: "Mon", full: "Monday" },
@@ -18,26 +21,7 @@ const DAYS = [
   { value: 6, label: "Sat", full: "Saturday" },
 ];
 
-const TIME_SLOTS = [
-  { start: "09:30", label: "9:30" },
-  { start: "10:30", label: "10:30" },
-  { start: "11:30", label: "11:30" },
-  { start: "12:30", label: "12:30" },
-  { start: "13:30", label: "1:30" },
-  { start: "14:30", label: "2:30" },
-  { start: "15:30", label: "3:30" },
-  { start: "16:30", label: "4:30" },
-];
-
-type GridSlot = {
-  classroomName: string;
-  sectionName: string | null;
-  subjectName: string | null;
-  dayOfWeek: number | null;
-  startTime: string;
-  endTime: string;
-};
-
+type GridSlot = OccupancySlot;
 type GridRoom = { name: string; building?: string | null; capacity?: number };
 
 export default function TimetablePage() {
@@ -48,9 +32,11 @@ export default function TimetablePage() {
   );
   const [stats, setStats] = useState({
     slots: 0,
-    rooms: FULL_TIMETABLE_ROOMS.length,
+    rooms: HALL_COUNT,
     roomsInUse: 0,
   });
+  const [source, setSource] = useState("empty");
+  const [fileName, setFileName] = useState("");
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
@@ -60,35 +46,11 @@ export default function TimetablePage() {
         const res = await fetch("/api/timetable/grid");
         const data = await res.json();
         if (cancelled) return;
-        const fromApi: GridRoom[] = Array.isArray(data.rooms) ? data.rooms : [];
-        const byName = new Map<string, GridRoom>();
-        for (const name of FULL_TIMETABLE_ROOMS) byName.set(name, { name });
-        for (const r of fromApi) if (r?.name) byName.set(r.name, r);
-        let ordered: GridRoom[];
-        if (fromApi.length >= FULL_TIMETABLE_ROOMS.length) {
-          const seen = new Set<string>();
-          ordered = [];
-          for (const r of fromApi) {
-            if (!r?.name || seen.has(r.name)) continue;
-            seen.add(r.name);
-            ordered.push(r);
-          }
-          for (const name of FULL_TIMETABLE_ROOMS) {
-            if (!seen.has(name)) ordered.push(byName.get(name)!);
-          }
-        } else {
-          ordered = [...byName.values()];
-        }
-        setRooms(ordered);
-        if (Array.isArray(data.slots)) setSlots(data.slots);
-        if (data.stats) {
-          setStats({
-            ...data.stats,
-            rooms: Math.max(data.stats.rooms ?? 0, ordered.length),
-          });
-        }
+        const best = resolvePublished(data) ?? data;
+        applyGrid(best, cancelled);
       } catch {
-        setRooms(FULL_TIMETABLE_ROOMS.map((name) => ({ name })));
+        const local = resolvePublished(null);
+        if (!cancelled) applyGrid(local, cancelled);
       } finally {
         if (!cancelled) setLoading(false);
       }
@@ -98,20 +60,61 @@ export default function TimetablePage() {
     };
   }, []);
 
+  function applyGrid(data: any, cancelled: boolean) {
+    if (cancelled || !data) return;
+    const fromApi: GridRoom[] = Array.isArray(data.rooms) ? data.rooms : [];
+    const byName = new Map<string, GridRoom>();
+    for (const name of FULL_TIMETABLE_ROOMS) byName.set(name, { name });
+    for (const r of fromApi) if (r?.name) byName.set(r.name, r);
+    let ordered: GridRoom[];
+    if (fromApi.length >= FULL_TIMETABLE_ROOMS.length) {
+      const seen = new Set<string>();
+      ordered = [];
+      for (const r of fromApi) {
+        if (!r?.name || seen.has(r.name)) continue;
+        seen.add(r.name);
+        ordered.push(r);
+      }
+      for (const name of FULL_TIMETABLE_ROOMS) {
+        if (!seen.has(name)) ordered.push(byName.get(name)!);
+      }
+    } else {
+      ordered = [...byName.values()];
+    }
+    setRooms(ordered);
+    if (Array.isArray(data.slots)) setSlots(data.slots);
+    if (data.stats) {
+      setStats({
+        ...data.stats,
+        rooms: Math.max(data.stats.rooms ?? 0, ordered.length, HALL_COUNT),
+      });
+    }
+    setSource(data.source ?? (data.slots?.length ? "published" : "empty"));
+    setFileName(data.fileName ?? "");
+  }
+
   const daySlots = useMemo(
-    () => slots.filter((s) => s.dayOfWeek === day),
+    () => slots.filter((s) => Number(s.dayOfWeek) === day),
     [slots, day],
   );
 
-  const lookup = (room: string, start: string) =>
-    daySlots.find((s) => s.classroomName === room && s.startTime === start);
+  const timeRows = useMemo(() => {
+    const rows = buildTimeRows(slots);
+    return rows.length ? rows : [
+      { start: "09:30", label: labelTime("09:30") },
+    ];
+  }, [slots]);
 
   const dayMeta = DAYS.find((d) => d.value === day);
 
   return (
     <AppShell
       title="Timetable"
-      subtitle="Every hall from the published 2025-26 schedule"
+      subtitle={
+        source === "seed"
+          ? `2025–26 1st year · ${HALL_COUNT} halls`
+          : "Every hall from the published schedule"
+      }
     >
       <div className="mb-6 flex flex-wrap items-center justify-between gap-4">
         <div className="flex flex-wrap gap-2">
@@ -119,14 +122,14 @@ export default function TimetablePage() {
           <Metric label="Rooms" value={String(rooms.length)} animate />
           <Metric
             label="In use"
-            value={loading ? "-" : String(stats.roomsInUse || rooms.length)}
+            value={loading ? "-" : String(stats.roomsInUse || 0)}
             animate={!loading}
           />
         </div>
         <Link href="/timetable/upload">
           <Button size="sm">
             <Upload className="h-3.5 w-3.5" strokeWidth={2.25} />
-            Upload
+            Replace
           </Button>
         </Link>
       </div>
@@ -153,7 +156,7 @@ export default function TimetablePage() {
             {dayMeta?.full ?? "Day"}
           </h2>
           <p className="mt-0.5 text-[13px] text-muted">
-            {rooms.length} halls · scroll for the full set
+            {rooms.length} halls · {fileName || "scroll for the full set"}
           </p>
         </div>
 
@@ -175,7 +178,7 @@ export default function TimetablePage() {
               </tr>
             </thead>
             <tbody>
-              {TIME_SLOTS.map((t, rowIdx) => (
+              {timeRows.map((t, rowIdx) => (
                 <tr
                   key={t.start}
                   className={rowIdx % 2 === 0 ? "bg-transparent" : "bg-black/20"}
@@ -184,7 +187,7 @@ export default function TimetablePage() {
                     {t.label}
                   </td>
                   {rooms.map((r) => {
-                    const hit = lookup(r.name, t.start);
+                    const hit = findSlot(daySlots, r.name, day, t.start);
                     return (
                       <td key={r.name} className="px-1.5 py-1.5 text-center">
                         {hit ? (
@@ -207,7 +210,7 @@ export default function TimetablePage() {
         </div>
 
         <p className="border-t border-border px-5 py-3.5 text-[12px] leading-snug text-subtle">
-          All {rooms.length} rooms from the 2025-26 workbook.
+          All {rooms.length} rooms. Dots are free that period.
         </p>
       </section>
     </AppShell>

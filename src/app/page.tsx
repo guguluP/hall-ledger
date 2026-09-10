@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { Calendar, DoorOpen, Users, Upload } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { HALL_COUNT } from "@/lib/rooms";
 
 export default function HomePage() {
   return (
@@ -21,7 +22,7 @@ export default function HomePage() {
 
       <main className="mx-auto max-w-6xl px-4 py-16 sm:px-6 md:py-24">
         <p className="mb-3 text-[13px] font-medium tracking-wide text-muted">
-          Aryabhatta &amp; Kautalya · 1st year 2025–26
+          Aryabhatta & Kautalya · 1st year 2025–26
         </p>
         <h1 className="max-w-2xl text-[40px] font-semibold leading-[1.05] tracking-tight sm:text-[48px] md:text-[56px]">
           Know every free classroom.
@@ -29,20 +30,20 @@ export default function HomePage() {
           <span className="text-muted">Catch overlaps early.</span>
         </h1>
         <p className="mt-5 max-w-lg text-[17px] leading-snug text-muted">
-          Upload the college Excel, resolve room conflicts, then search vacancies
-          and book extra classes across all 26 halls.
+          The 2025–26 timetable is already loaded. Search vacancies, review the
+          grid, or replace it with a new Excel — across all {HALL_COUNT} halls.
         </p>
         <div className="mt-8 flex flex-wrap gap-3">
-          <Link href="/timetable/upload">
-            <Button size="lg">
-              <Upload className="h-4 w-4" strokeWidth={2.25} />
-              Upload timetable
-            </Button>
-          </Link>
           <Link href="/vacancy">
-            <Button variant="secondary" size="lg">
+            <Button size="lg">
               <DoorOpen className="h-4 w-4" strokeWidth={2.25} />
               Find a free room
+            </Button>
+          </Link>
+          <Link href="/timetable">
+            <Button variant="secondary" size="lg">
+              <Calendar className="h-4 w-4" strokeWidth={2.25} />
+              Open grid
             </Button>
           </Link>
         </div>
@@ -62,7 +63,7 @@ export default function HomePage() {
               key={r.n}
               className={`rounded-xl border p-3 ${
                 r.free
-                  ? "border-border/60 bg-transparent"
+                  ? "border-[rgba(48,209,88,0.28)] bg-[rgba(48,209,88,0.08)]"
                   : "border-border bg-surface"
               }`}
             >
@@ -84,12 +85,12 @@ export default function HomePage() {
           <Feature
             icon={<Calendar className="h-5 w-5" strokeWidth={1.75} />}
             title="Conflict-free publish"
-            body="Hard room overlaps block publish. Auto-resolve moves the extra section to a free hall."
+            body="Hard room overlaps flag on parse. Publish fills the live grid for every hall."
           />
           <Feature
             icon={<DoorOpen className="h-5 w-5" strokeWidth={1.75} />}
             title="Live vacancy search"
-            body="Day and time filters over the published grid — all 26 rooms, not a sample."
+            body={`Day and time filters over the published grid — all ${HALL_COUNT} rooms, not a sample.`}
           />
           <Feature
             icon={<Users className="h-5 w-5" strokeWidth={1.75} />}
@@ -97,6 +98,15 @@ export default function HomePage() {
             body="Upload student lists, see enrollment diffs, and propose merges when sections shrink."
           />
         </div>
+
+        <p className="mt-10 text-[13px] text-subtle">
+          <Upload className="mr-1 inline h-3.5 w-3.5" strokeWidth={2} />
+          Replace the seed anytime from{" "}
+          <Link href="/timetable/upload" className="text-muted underline-offset-2 hover:text-fg hover:underline">
+            Upload
+          </Link>
+          .
+        </p>
       </main>
     </div>
   );

@@ -1,4 +1,4 @@
-/** Every hall that appears in the 1st-year 2025–26 workbook */
+/** Every hall that appears in the 1st-year 2025–26 workbook, plus campus labs. */
 export const FULL_TIMETABLE_ROOMS = [
   "10",
   "105",
@@ -28,6 +28,8 @@ export const FULL_TIMETABLE_ROOMS = [
   "ME-103",
   "ME-104",
 ] as const;
+
+export const HALL_COUNT = FULL_TIMETABLE_ROOMS.length;
 
 export type TimetableRoomName = (typeof FULL_TIMETABLE_ROOMS)[number];
 export type Campus = "Aryabhatta" | "Kautalya";

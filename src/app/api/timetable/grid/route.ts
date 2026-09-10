@@ -1,5 +1,5 @@
 import { NextResponse } from "next/server";
-import { buildingOf, FULL_TIMETABLE_ROOMS } from "@/lib/rooms";
+import { buildingOf, FULL_TIMETABLE_ROOMS, HALL_COUNT } from "@/lib/rooms";
 import { loadPublished } from "@/lib/published-store";
 import { padTime } from "@/lib/time";
 
@@ -10,7 +10,7 @@ function emptyGrid() {
   return {
     slots: [] as const,
     rooms: FULL_TIMETABLE_ROOMS.map((name) => ({ name, building: buildingOf(name), capacity: 60 })),
-    stats: { slots: 0, rooms: FULL_TIMETABLE_ROOMS.length, roomsInUse: 0, sections: 0, conflicts: 0 },
+    stats: { slots: 0, rooms: HALL_COUNT, roomsInUse: 0, sections: 0, conflicts: 0 },
     source: "empty" as const,
     warning: "No published timetable yet. Upload and Publish from the Upload page.",
   };
@@ -20,10 +20,16 @@ export async function GET() {
   try {
     const published = await loadPublished();
     if (published?.slots?.length) {
+      const source = published.origin === "seed" ? "seed" : "published";
       return NextResponse.json({
         slots: published.slots.map((s) => ({ ...s, startTime: padTime(s.startTime), endTime: padTime(s.endTime) })),
-        rooms: published.rooms.length ? published.rooms : FULL_TIMETABLE_ROOMS.map((name) => ({ name, building: buildingOf(name), capacity: 60 })),
-        stats: published.stats, source: "published", publishedAt: published.publishedAt, fileName: published.fileName,
+        rooms: published.rooms.length
+          ? published.rooms
+          : FULL_TIMETABLE_ROOMS.map((name) => ({ name, building: buildingOf(name), capacity: 60 })),
+        stats: { ...published.stats, rooms: published.stats?.rooms || HALL_COUNT },
+        source,
+        publishedAt: published.publishedAt,
+        fileName: published.fileName,
       });
     }
   } catch (e) {

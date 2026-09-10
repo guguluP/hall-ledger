@@ -186,7 +186,7 @@ export default function VacancyPage() {
   const isFullDay = startTime === "09:30" && (endTime === "17:30" || endTime === "05:30");
 
   return (
-    <AppShell title="Find a room" subtitle="Uses the published timetable across all halls">
+    <AppShell title="Find a room" subtitle="2025–26 grid is live · a hall is free only for the whole window">
       <div className="mb-5">
         <SlidingTabs items={DAYS} value={day} onChange={(v) => setDay(String(v))} />
       </div>

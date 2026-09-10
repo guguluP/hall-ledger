@@ -14,21 +14,28 @@ import { AppShell } from "@/components/app-shell";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { DigitPop } from "@/components/ui/digit-pop";
 import { Toggle } from "@/components/ui/toggle";
+import { HALL_COUNT } from "@/lib/rooms";
+import { loadLabsOnly, saveLabsOnly, resolvePublished } from "@/lib/client-cache";
 
 export default function DashboardPage() {
   const [shown, setShown] = useState(false);
   const [labsOnly, setLabsOnly] = useState(false);
   const [stats, setStats] = useState({
-    rooms: 26,
+    rooms: HALL_COUNT,
     sections: 0,
     slots: 0,
     conflicts: 0,
     source: "empty",
+    fileName: "",
   });
 
   useEffect(() => {
     const id = requestAnimationFrame(() => setShown(true));
     return () => cancelAnimationFrame(id);
+  }, []);
+
+  useEffect(() => {
+    setLabsOnly(loadLabsOnly());
   }, []);
 
   useEffect(() => {
@@ -38,15 +45,27 @@ export default function DashboardPage() {
         const res = await fetch("/api/timetable/grid");
         const data = await res.json();
         if (cancelled) return;
+        const best = resolvePublished(data) ?? data;
         setStats({
-          rooms: data.stats?.rooms ?? data.rooms?.length ?? 26,
-          sections: data.stats?.sections ?? 0,
-          slots: data.stats?.slots ?? 0,
-          conflicts: data.stats?.conflicts ?? 0,
-          source: data.source ?? "empty",
+          rooms: best.stats?.rooms ?? best.rooms?.length ?? HALL_COUNT,
+          sections: best.stats?.sections ?? 0,
+          slots: best.stats?.slots ?? 0,
+          conflicts: best.stats?.conflicts ?? 0,
+          source: best.source ?? data.source ?? "empty",
+          fileName: best.fileName ?? "",
         });
       } catch {
-        // keep defaults
+        const local = resolvePublished(null);
+        if (local?.slots?.length) {
+          setStats({
+            rooms: (local as any).stats?.rooms ?? HALL_COUNT,
+            sections: (local as any).stats?.sections ?? 0,
+            slots: (local as any).slots.length,
+            conflicts: (local as any).stats?.conflicts ?? 0,
+            source: "published",
+            fileName: (local as any).fileName ?? "",
+          });
+        }
       }
     })();
     return () => {
@@ -54,7 +73,13 @@ export default function DashboardPage() {
     };
   }, []);
 
+  const handleLabs = (v: boolean) => {
+    setLabsOnly(v);
+    saveLabsOnly(v);
+  };
+
   const hasData = stats.slots > 0;
+  const seeded = stats.source === "seed";
 
   return (
     <AppShell
@@ -66,11 +91,11 @@ export default function DashboardPage() {
           shown ? "is-shown" : ""
         }`}
       >
-        <Stat label="Classrooms" value={String(stats.rooms)} sub="Full hall set" />
+        <Stat label="Classrooms" value={String(stats.rooms)} sub={`${HALL_COUNT} hall set`} />
         <Stat
           label="Sections"
           value={hasData ? String(stats.sections || "—") : "—"}
-          sub={hasData ? "Published" : "Upload to fill"}
+          sub={hasData ? "In timetable" : "Upload to fill"}
         />
         <Stat
           label="Slots"
@@ -90,13 +115,13 @@ export default function DashboardPage() {
           <p className="text-[14px] font-semibold tracking-tight">Labs only</p>
           <p className="text-[12px] text-muted">Prefer lab rooms in vacancy search</p>
         </div>
-        <Toggle checked={labsOnly} onChange={setLabsOnly} label="Labs only" />
+        <Toggle checked={labsOnly} onChange={handleLabs} label="Labs only" />
       </div>
 
       <div className="mb-8 grid gap-2.5 sm:grid-cols-3">
         <Quick href="/vacancy" title="Find free room" body="Search by day and time" />
-        <Quick href="/timetable/upload" title="Upload timetable" body="Excel with all 16 sections" />
-        <Quick href="/students/upload" title="Student list" body="Drag-and-drop consolidation" />
+        <Quick href="/timetable" title="Open grid" body={`${HALL_COUNT} halls · Mon–Sat`} />
+        <Quick href="/students" title="Student list" body="Drag-and-drop consolidation" />
       </div>
 
       <div className="grid gap-3 lg:grid-cols-2">
@@ -111,14 +136,14 @@ export default function DashboardPage() {
             {!hasData ? (
               <Note
                 tone="warn"
-                title="Publish the 2025–26 Excel"
+                title="Publish a timetable"
                 detail="Parse on Upload, then Publish so Grid and vacancy use real occupancy."
               />
             ) : (
               <Note
                 tone="muted"
-                title="Timetable is live"
-                detail={`${stats.slots} slots across ${stats.rooms} halls. Open Grid to browse by day.`}
+                title={seeded ? "2025–26 timetable is live" : "Timetable is live"}
+                detail={`${stats.slots} slots across ${stats.rooms} halls${stats.fileName ? ` · ${stats.fileName}` : ""}. Open Grid to browse by day.`}
               />
             )}
             <Note
@@ -139,7 +164,7 @@ export default function DashboardPage() {
           <CardContent className="space-y-3 text-[14px] text-muted">
             <p className="flex items-start gap-2.5">
               <Upload className="mt-0.5 h-4 w-4 shrink-0 text-accent" strokeWidth={2} />
-              Parse all sheets → publish → grid fills.
+              Seed is loaded. Upload a new Excel to replace it.
             </p>
             <p className="flex items-start gap-2.5">
               <DoorOpen className="mt-0.5 h-4 w-4 shrink-0 text-accent" strokeWidth={2} />

@@ -1,5 +1,6 @@
 /**
  * Published timetable store — works without Postgres on Vercel.
+ * Falls back to the bundled 2025–26 seed so Grid/Find work before an upload.
  * Clients also cache the payload in localStorage (see client-cache.ts)
  * because serverless instances do not share /tmp.
  */
@@ -7,6 +8,7 @@ import { promises as fs } from "fs";
 import path from "path";
 import { buildingOf } from "./rooms";
 import { padTime } from "./time";
+import defaultTimetable from "@/data/default-timetable.json";
 
 export type PublishedSlot = {
   classroomName: string;
@@ -18,6 +20,7 @@ export type PublishedSlot = {
 };
 
 export type PublishedPayload = {
+  origin?: "seed" | "upload";
   publishedAt: string;
   fileName?: string;
   slots: PublishedSlot[];
@@ -36,10 +39,15 @@ const TMP = path.join("/tmp", "hall-ledger-published.json");
 type GlobalStore = { __hallLedgerPublished?: PublishedPayload | null };
 const g = globalThis as unknown as GlobalStore;
 
+export function defaultPublished(): PublishedPayload {
+  return { ...(defaultTimetable as PublishedPayload), origin: "seed" };
+}
+
 export async function savePublished(payload: PublishedPayload): Promise<void> {
-  g.__hallLedgerPublished = payload;
+  const next = { ...payload, origin: "upload" as const };
+  g.__hallLedgerPublished = next;
   try {
-    await fs.writeFile(TMP, JSON.stringify(payload), "utf8");
+    await fs.writeFile(TMP, JSON.stringify(next), "utf8");
   } catch (e) {
     console.warn("[published-store] /tmp write failed", e);
   }
@@ -57,9 +65,9 @@ export async function loadPublished(): Promise<PublishedPayload | null> {
       return data;
     }
   } catch {
-    // no file yet
+    // no override yet
   }
-  return g.__hallLedgerPublished ?? null;
+  return defaultPublished();
 }
 
 export function slotsFromParse(parse: any): PublishedSlot[] {

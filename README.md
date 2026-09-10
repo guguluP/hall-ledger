@@ -1,33 +1,40 @@
 # Hall Ledger
 
-**Smart Classroom Availability & Section Management** — Single Building Edition
+**Smart classroom availability & section management** — Aryabhatta & Kautalya, 1st year 2025–26.
 
-A mobile-first web app for colleges that solves classroom scheduling conflicts, vacancy blindness, and mid-semester section imbalance.
+A mobile-first web app that finds free halls, flags room overlaps, and proposes section merges.
 
 ## Features
 
-- Timetable upload + hard room/teacher conflict detection
-- Vacancy search across all 26 halls (2025–26 workbook)
-- Apple-inspired dark UI (Hall Ledger)
-- Student list upload + consolidation proposals
+- **2025–26 timetable is preloaded** (16 sections · 340 slots · 27 halls) so Grid and Find work before any upload
+- Format-tolerant Excel / CSV / ODS parse (any layout with days and times)
+- Hard room-overlap detection on parse
+- Vacancy search: a hall is free only if the *entire* window is empty (9:30 AM–5:30 PM is afternoon, not 5:30 AM)
+- Student list upload + consolidation proposals when a section drops below 25
+- Apple-inspired dark UI
+
+## Halls
+
+27 rooms: Aryabhatta `10`–`405` plus Kautalya `ME-01`–`ME-104`.
 
 ## Tech
 
 - Next.js 15 (App Router) + TypeScript + Tailwind
-- Prisma + SQLite (local) / Postgres recommended for production
+- No database required for Grid / Find / Upload (published store + bundled seed)
+- Prisma is optional if you later persist to Postgres
 
 ## Local setup
 
 ```bash
 npm install
-cp .env.example .env
-npx prisma db push
-npx prisma db seed
 npm run dev
 ```
 
 Open http://localhost:3000
 
-## Deploy
+## Upload formats
 
-Set `DATABASE_URL`, `NEXTAUTH_SECRET`, and `NEXTAUTH_URL` in Vercel project env. SQLite file DBs are not durable on serverless — use Postgres (e.g. Neon, Supabase) for production.
+- **Timetable:** one sheet per section *or* a single grid with days as rows. Cells may include `Room No:- 316` / `R.No-404`. Download `/samples/timetable-template.csv`.
+- **Students:** columns `Section`, `Roll`, `Name` (flexible headers). Download `/samples/students-template.csv`.
+
+Replace the seed anytime from **Upload → Parse → Publish**.
