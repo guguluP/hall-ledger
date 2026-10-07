@@ -7,6 +7,15 @@ export const dynamic = "force-dynamic";
 
 export async function POST(req: NextRequest) {
   try {
+    const publishSecret = process.env.PUBLISH_SECRET;
+    if (publishSecret) {
+      const provided =
+        req.headers.get("x-publish-secret") ||
+        req.headers.get("authorization")?.replace(/^Bearer\s+/i, "");
+      if (provided !== publishSecret) {
+        return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+      }
+    }
     const body = await req.json();
     const parse = body?.parse;
     if (!parse) return NextResponse.json({ error: "Missing parse payload" }, { status: 400 });

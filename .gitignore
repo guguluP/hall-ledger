@@ -38,3 +38,6 @@ prisma/*.db-journal
 # typescript
 next-env.d.ts
 *.tsbuildinfo
+
+# netlify
+.netlify
