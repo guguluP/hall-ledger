@@ -127,6 +127,10 @@ export default function StudentsPage() {
         </p>
       )}
 
+      <p className="mb-4 rounded-[20px] bg-elevated px-4 py-3 text-[13px] text-muted">
+        Student lists are read in your browser and never sent to a server. They stay on this device for 24 hours, then clear automatically.
+      </p>
+
       <div
         {...getRootProps()}
         className={`mb-4 cursor-pointer rounded-[28px] border border-dashed px-6 py-10 text-center transition-colors ${

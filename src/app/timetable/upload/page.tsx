@@ -16,6 +16,7 @@ import { Button } from "@/components/ui/button";
 import { SuccessCheck } from "@/components/ui/success-check";
 import { ToastStack, useToastStack } from "@/components/ui/toast-stack";
 import { saveClientPublished } from "@/lib/client-cache";
+import { DEFAULT_MAX_UPLOAD_BYTES, formatBytes } from "@/lib/limits";
 
 type ParseSummary = { totalSections: number; totalSlots: number; totalConflicts: number };
 
@@ -32,12 +33,19 @@ export default function TimetableUploadPage() {
   const [warnings, setWarnings] = useState<string[]>([]);
   const [parsePayload, setParsePayload] = useState<any>(null);
   const [fileName, setFileName] = useState("");
+  // Kept in memory only: never written to localStorage or the URL.
+  const [publishKey, setPublishKey] = useState("");
   const { items, push } = useToastStack();
 
   const takeFile = useCallback((f: File | undefined) => {
     if (!f) return;
     if (!isSpreadsheet(f)) {
       setErrorMsg("Only .xlsx, .xlsm, .xls, .csv, .tsv or .ods files are supported");
+      setStatus("error");
+      return;
+    }
+    if (f.size > DEFAULT_MAX_UPLOAD_BYTES) {
+      setErrorMsg(`File is too large. Maximum size is ${formatBytes(DEFAULT_MAX_UPLOAD_BYTES)}.`);
       setStatus("error");
       return;
     }
@@ -92,9 +100,11 @@ export default function TimetableUploadPage() {
     if (!parsePayload) return;
     setStatus("publishing");
     try {
+      const headers: Record<string, string> = { "Content-Type": "application/json" };
+      if (publishKey.trim()) headers["x-publish-secret"] = publishKey.trim();
       const res = await fetch("/api/timetable/publish", {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
+        headers,
         body: JSON.stringify({ parse: parsePayload.parse, fileName: fileName || parsePayload.fileName }),
       });
       const data = await res.json();
@@ -150,7 +160,27 @@ export default function TimetableUploadPage() {
         ) : (
           <p className="text-[15px] text-muted">Drop a timetable workbook here, or click to browse</p>
         )}
-        <p className="mt-1 text-[12px] text-subtle">.xlsx · .xlsm · .xls · .csv · .tsv · .ods</p>
+        <p className="mt-1 text-[12px] text-subtle">
+          .xlsx · .xlsm · .xls · .csv · .tsv · .ods · up to {formatBytes(DEFAULT_MAX_UPLOAD_BYTES)}
+        </p>
+      </div>
+
+      <div className="mb-6 rounded-[28px] border border-border bg-surface px-5 py-4">
+        <label htmlFor="publish-key" className="text-[13px] font-semibold text-muted">
+          Publish key
+        </label>
+        <input
+          id="publish-key"
+          type="password"
+          autoComplete="off"
+          value={publishKey}
+          onChange={(e) => setPublishKey(e.target.value)}
+          placeholder="Needed to publish on a live site"
+          className="mt-2 w-full rounded-[14px] border border-border bg-elevated px-3 py-2 text-[14px] text-fg placeholder:text-subtle focus:outline-none focus:ring-2 focus:ring-accent"
+        />
+        <p className="mt-2 text-[12px] text-subtle">
+          Parsing is open. Publishing requires the key set as PUBLISH_SECRET on the server.
+        </p>
       </div>
 
       <div className="mb-8 flex flex-wrap gap-3">
@@ -195,7 +225,10 @@ export default function TimetableUploadPage() {
           <SuccessCheck show size={40} />
           <div>
             <p className="text-[15px] font-semibold">Published</p>
-            <p className="text-[13px] text-muted">Grid and vacancy search now use this timetable.</p>
+            <p className="text-[13px] text-muted">Grid and vacancy search now use this timetable on this device.</p>
+            <p className="mt-1 text-[12px] text-subtle">
+              It is saved in this browser and on this server instance only. There is no shared database yet, so other devices may still see the bundled 2025–26 timetable.
+            </p>
           </div>
         </div>
       )}

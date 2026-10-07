@@ -1,0 +1,44 @@
+name: CI
+
+on:
+  push:
+    branches: [main, netlify-deploy]
+  pull_request:
+
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+
+jobs:
+  verify:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    env:
+      # Only needed so `prisma generate` can read the schema; no database is used at runtime.
+      DATABASE_URL: file:./dev.db
+      NEXT_TELEMETRY_DISABLED: "1"
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+
+      - name: Install
+        run: npm ci
+
+      - name: Lint
+        run: npm run lint
+
+      - name: Typecheck
+        run: npm run typecheck
+
+      - name: Unit and route tests
+        run: npm test
+
+      - name: Build
+        run: npm run build

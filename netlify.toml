@@ -12,6 +12,8 @@
   # Prisma generate reads DATABASE_URL from schema; SQLite path is build-only.
   # Runtime Grid/Find/Upload use the bundled seed + /tmp + client localStorage — no DB required.
   DATABASE_URL = "file:./dev.db"
+  # PUBLISH_SECRET is NOT set here (never commit secrets). Add it under
+  # Site configuration -> Environment variables, or production publish stays disabled.
 
 [dev]
   command = "npm run dev"
