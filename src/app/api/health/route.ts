@@ -6,7 +6,6 @@ export async function GET() {
   const result: any = {
     ok: true,
     databaseUrlSet: Boolean(process.env.DATABASE_URL),
-    databaseUrlPrefix: (process.env.DATABASE_URL || "").slice(0, 12),
     prisma: null as string | null,
     error: null as string | null,
   };
