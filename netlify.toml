@@ -1,0 +1,20 @@
+# Hall Ledger — Netlify (Next.js 15 App Router)
+# Netlify auto-provisions @netlify/plugin-nextjs / OpenNext for Next 13.5+.
+# Do not pin the plugin so builds pick up adapter updates.
+# Vercel config (if any) is left untouched for easy switch-back.
+
+[build]
+  command = "npm run build"
+  publish = ".next"
+
+[build.environment]
+  NODE_VERSION = "20"
+  # Prisma generate reads DATABASE_URL from schema; SQLite path is build-only.
+  # Runtime Grid/Find/Upload use the bundled seed + /tmp + client localStorage — no DB required.
+  DATABASE_URL = "file:./dev.db"
+  # PUBLISH_SECRET is NOT set here (never commit secrets). Add it under
+  # Site configuration -> Environment variables, or production publish stays disabled.
+
+[dev]
+  command = "npm run dev"
+  targetPort = 3000

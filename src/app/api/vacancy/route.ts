@@ -3,6 +3,7 @@ import { buildingOf, FULL_TIMETABLE_ROOMS } from "@/lib/rooms";
 import { loadPublished } from "@/lib/published-store";
 import { findAvailability } from "@/lib/occupancy";
 import { normalizeWindow } from "@/lib/time";
+import { publicError } from "@/lib/http";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -64,7 +65,7 @@ export async function GET(req: NextRequest) {
   } catch (e) {
     console.error("[vacancy]", e);
     return NextResponse.json(
-      { error: e instanceof Error ? e.message : "Vacancy search failed" },
+      { error: publicError(e, "Vacancy search failed") },
       { status: 500 },
     );
   }

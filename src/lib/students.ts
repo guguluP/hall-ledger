@@ -52,12 +52,37 @@ export function saveStudents(rows: StudentRow[]) {
   }
 }
 
+/** Student lists hold names and roll numbers, so they only live in the browser for a day. */
+export const STUDENTS_TTL_MS = 24 * 60 * 60 * 1000;
+
+export function isStudentCacheExpired(
+  savedAt: unknown,
+  now: number = Date.now(),
+  ttlMs: number = STUDENTS_TTL_MS,
+): boolean {
+  if (typeof savedAt !== "number" || !Number.isFinite(savedAt)) return true;
+  return now - savedAt > ttlMs;
+}
+
+export function clearStudents() {
+  if (typeof window === "undefined") return;
+  try {
+    localStorage.removeItem(STORAGE_KEY);
+  } catch {
+    // ignore
+  }
+}
+
 export function loadStudents(): StudentRow[] | null {
   if (typeof window === "undefined") return null;
   try {
     const raw = localStorage.getItem(STORAGE_KEY);
     if (!raw) return null;
     const data = JSON.parse(raw);
+    if (isStudentCacheExpired(data?.savedAt)) {
+      clearStudents();
+      return null;
+    }
     if (Array.isArray(data?.rows) && data.rows.length) return data.rows as StudentRow[];
     return null;
   } catch {
