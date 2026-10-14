@@ -4,27 +4,29 @@ Hall Ledger keeps its own users, sessions, and institution data. There is no thi
 
 ## Database
 
-Local development uses SQLite:
+Hall Ledger uses PostgreSQL everywhere. Production runs on Supabase (project `hall-ledger`, ref `hrvmjdoedikaxfnseztn`, region ap-south-1). Only Postgres is used; Supabase Auth and the Data API are not. RLS is enabled with no policies on every table, so the anon/authenticated REST roles can read and write nothing; the app connects server-side through Prisma as the `postgres` role.
+
+Local development needs a local Postgres:
 
 ```bash
-cp .env.example .env
+cp .env.example .env          # edit DATABASE_URL / DIRECT_URL
 npm install
-npx prisma db push
+npx prisma migrate deploy
 npm run db:seed
 npm run dev
 ```
 
-The demo institution is `demo`. The seeded owner is `owner@demo.hallledger.test` / `DemoOwner-2026` unless `SEED_OWNER_EMAIL` and `SEED_OWNER_PASSWORD` are set. Change that password before any shared deployment.
+The demo institution is `demo`. The seeded owner is `owner@demo.hallledger.test`; set `SEED_OWNER_PASSWORD` when seeding (the default `DemoOwner-2026` is for local use only).
 
-Production should use PostgreSQL:
+Production (Supabase):
 
-1. In `prisma/schema.prisma`, set `provider = "postgresql"`.
-2. Set `DATABASE_URL` to the Postgres URL.
-3. Run `npx prisma migrate dev` to create the SQL migration, then deploy it.
-4. Apply `prisma/postgres/slot-check.sql` so a slot cannot end before it starts.
-5. Run `npm run db:seed` once.
+- `DATABASE_URL` = Supabase "Transaction pooler" string (port 6543) plus `?pgbouncer=true&connection_limit=1`.
+- `DIRECT_URL` = Supabase "Direct connection" string (port 5432), or the "Session pooler" (port 5432) if your network is IPv4-only.
+- New schema changes: `npx prisma migrate dev` against a local DB, commit the migration, then `npx prisma migrate deploy` with production `DIRECT_URL`. The Slot time CHECK and RLS are in the migrations.
 
-SQLite files do not persist on Vercel or Netlify. `netlify.toml` builds the Next.js app and does not set `DATABASE_URL`. Put a Postgres URL and `APP_URL` in the host's environment, set `TRUST_PROXY=1` when the platform appends the client IP, and run `npm run db:seed` once.
+Tests reset their database. They only run when `TEST_DATABASE_URL` / `E2E_DATABASE_URL` point at a database whose name contains `test`. Never point them at Supabase.
+
+`netlify.toml` builds the Next.js app and does not set `DATABASE_URL`. Put the database URLs and `APP_URL` in the host's environment and keep `TRUST_PROXY=1` on Netlify.
 
 Login lockout is per email and client IP, so a bad password from somewhere else does not lock the real user. Signup, reset, invites, and new schools are limited per account as well as per IP.
 

@@ -2,14 +2,15 @@ generator client {
   provider = "prisma-client-js"
 }
 
-// SQLite keeps local dev and CI runnable without a database server.
-// Production Postgres: change provider to "postgresql", point DATABASE_URL
-// at the server, run `prisma migrate`, then apply prisma/postgres/slot-check.sql.
-// Role, TokenType, and VersionStatus are strings here because Prisma enums
-// are not available on SQLite. Allowed values live in src/lib/auth/roles.ts.
+// PostgreSQL (Supabase). DATABASE_URL is the pooled connection (port 6543,
+// ?pgbouncer=true) used at runtime; DIRECT_URL is the direct connection
+// (port 5432) used by `prisma migrate`. Role, TokenType, and VersionStatus stay
+// strings; allowed values live in src/lib/auth/roles.ts. The Slot time CHECK and
+// RLS are part of the migrations.
 datasource db {
-  provider = "sqlite"
-  url      = env("DATABASE_URL")
+  provider  = "postgresql"
+  url       = env("DATABASE_URL")
+  directUrl = env("DIRECT_URL")
 }
 
 model User {
