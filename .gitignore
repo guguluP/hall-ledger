@@ -27,6 +27,10 @@ prisma/*.db
 prisma/*.db-journal
 *.db
 *.db-journal
+.mail-dev.log
+/test-results
+/playwright-report
+/blob-report
 
 # vercel / IDE
 .vercel

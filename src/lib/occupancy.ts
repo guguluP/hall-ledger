@@ -1,10 +1,10 @@
 import { buildingOf, isLabRoom, roomsEqual } from "./rooms";
 import {
-  coversStart,
   fromMinutes,
   labelTime,
   normalizeWindow,
   padTime,
+  parseTimeToMinutes,
   rangesOverlap,
   slotEndMinutes,
   slotMinutes,
@@ -18,6 +18,8 @@ export type OccupancySlot = {
   dayOfWeek: number | null;
   startTime: string;
   endTime: string;
+  startMin?: number;
+  endMin?: number;
 };
 
 function sameDay(slotDay: number | string | null | undefined, day: number): boolean {
@@ -27,6 +29,13 @@ function sameDay(slotDay: number | string | null | undefined, day: number): bool
 }
 
 export function slotInterval(slot: OccupancySlot): { start: number; end: number } | null {
+  if (
+    typeof slot.startMin === "number" &&
+    typeof slot.endMin === "number" &&
+    slot.endMin > slot.startMin
+  ) {
+    return { start: slot.startMin, end: slot.endMin };
+  }
   const start = slotMinutes(slot.startTime);
   if (start < 0) return null;
   const end = slotEndMinutes(slot.startTime, slot.endTime || "");
@@ -42,7 +51,10 @@ export function slotCovers(
 ): boolean {
   if (!sameDay(slot.dayOfWeek, day)) return false;
   if (!roomsEqual(slot.classroomName, room)) return false;
-  return coversStart(slot.startTime, slot.endTime || slot.startTime, start);
+  const iv = slotInterval(slot);
+  const at = parseTimeToMinutes(start);
+  if (!iv || at < 0) return false;
+  return at >= iv.start && at < iv.end;
 }
 
 export function slotOverlapsWindow(
@@ -180,7 +192,7 @@ function nextBookingLabel(
 }
 
 export function findAvailability(
-  rooms: { name: string; building?: string | null; capacity?: number }[],
+  rooms: { name: string; building?: string | null; capacity?: number; isLab?: boolean }[],
   slots: OccupancySlot[],
   day: number,
   start: string,
@@ -197,7 +209,8 @@ export function findAvailability(
   if (!win) return { free, partial };
 
   for (const room of rooms) {
-    if (labsOnly && !isLabRoom(room.name)) continue;
+    const lab = room.isLab ?? isLabRoom(room.name);
+    if (labsOnly && !lab) continue;
     const occ = occupiedForRoom(slots, room.name, day);
     const merged = mergeIntervals(occ);
     const overlaps = merged.some((iv) => win.startMin < iv.end && iv.start < win.endMin);
@@ -214,7 +227,7 @@ export function findAvailability(
       name: room.name,
       building: room.building || buildingOf(room.name),
       capacity: room.capacity || 60,
-      isLab: isLabRoom(room.name),
+      isLab: lab,
       gaps: gapLabels,
     };
 

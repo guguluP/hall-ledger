@@ -116,19 +116,30 @@ export function roomsEqual(
   b: string | null | undefined,
 ): boolean {
   if (!a || !b) return false;
-  const variants = (x: string) => {
-    return new Set(
-      [
-        x.trim().toUpperCase().replace(/\s+/g, ""),
-        canonicalRoom(x, "Aryabhatta"),
-        canonicalRoom(x, "Kautalya"),
-      ].filter((v): v is string => !!v).map((v) => v.toUpperCase().replace(/\s+/g, "")),
-    );
-  };
-  const A = variants(a);
-  const B = variants(b);
-  for (const v of A) if (B.has(v)) return true;
-  return false;
+  const norm = (value: string) => value.trim().toUpperCase().replace(/\s+/g, "");
+  return norm(a) === norm(b);
+}
+
+export type DemoRoomRules = {
+  prefix: string;
+  padLowMax: number;
+  meRange: [number, number];
+};
+
+/** Demo seed only. Upload parsing does not call this. */
+export function applyDemoRoomRules(raw: string, rules: DemoRoomRules): string {
+  const text = raw.trim().toUpperCase().replace(/\s+/g, "");
+  if (/^ME-?\d+$/.test(text)) {
+    const n = text.replace(/^ME-?/, "");
+    return `${rules.prefix}${n.length === 1 ? n.padStart(2, "0") : n}`;
+  }
+  if (/^\d+$/.test(text)) {
+    const n = parseInt(text, 10);
+    if (n >= 1 && n <= rules.padLowMax) return `${rules.prefix}${String(n).padStart(2, "0")}`;
+    if (n >= rules.meRange[0] && n <= rules.meRange[1]) return `${rules.prefix}${n}`;
+    return String(n);
+  }
+  return raw.trim();
 }
 
 export function buildingOf(name: string): string {

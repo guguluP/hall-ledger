@@ -1,0 +1,7 @@
+{
+  "note": "Used only by prisma/seed.ts for the demo institution. The CSV parser does not remap unknown rooms.",
+  "prefix": "ME-",
+  "padLowMax": 4,
+  "meRange": [101, 104],
+  "labs": ["105", "107", "207", "302", "304", "322", "402"]
+}

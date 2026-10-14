@@ -27,10 +27,7 @@ export function parseTimeToMinutes(
   let h = parseInt(hm[1], 10);
   const min = parseInt(hm[2], 10);
   if (h > 24 || min > 59) return -1;
-  if (h === 24) {
-    if (min !== 0) return -1;
-    return 0;
-  }
+  if (h === 24) return -1;
   if (opts?.assumeAfternoon && h >= 1 && h <= 6) h += 12;
   return h * 60 + min;
 }
@@ -103,7 +100,6 @@ export function normalizeWindow(start: string, end: string): TimeWindow | null {
     interpretedPm = true;
   }
   if (endMin <= startMin) return null;
-  if (endMin - startMin > 12 * 60) return null;
 
   return {
     start: fromMinutes(startMin),

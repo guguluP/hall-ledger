@@ -1,133 +1,60 @@
 import Link from "next/link";
-import { Calendar, DoorOpen, Users, Upload } from "lucide-react";
+import { DoorOpen } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { HALL_COUNT } from "@/lib/rooms";
+import { searchInstitutions } from "@/lib/auth/service";
+import { shellData } from "@/lib/shell";
 
-export default function HomePage() {
+export const dynamic = "force-dynamic";
+
+export default async function HomePage({ searchParams }: { searchParams: Promise<{ q?: string }> }) {
+  const { q = "" } = await searchParams;
+  const [schools, shell] = await Promise.all([searchInstitutions(q), shellData()]);
   return (
     <div className="min-h-screen bg-bg text-fg">
       <header className="mx-auto flex h-14 max-w-6xl items-center justify-between px-4 sm:px-6">
         <div className="flex items-center gap-2.5">
-          <span className="flex h-7 w-7 items-center justify-center rounded-[9px] bg-accent text-accent-fg shadow-sm">
-            <DoorOpen className="h-3.5 w-3.5" strokeWidth={2.25} />
+          <span className="flex h-7 w-7 items-center justify-center rounded-[9px] bg-accent text-accent-fg">
+            <DoorOpen className="h-3.5 w-3.5" />
           </span>
-          <span className="text-[15px] font-semibold tracking-tight">
-            Hall Ledger
-          </span>
+          <span className="text-[15px] font-semibold">Hall Ledger</span>
         </div>
-        <Link href="/dashboard">
-          <Button size="sm">Open app</Button>
-        </Link>
+        <div className="flex gap-2">
+          {shell.user ? (
+            <Link href="/account"><Button size="sm" variant="secondary">Account</Button></Link>
+          ) : (
+            <Link href="/login"><Button size="sm" variant="secondary">Log in</Button></Link>
+          )}
+          <Link href="/signup"><Button size="sm">Sign up</Button></Link>
+        </div>
       </header>
-
-      <main className="mx-auto max-w-6xl px-4 py-16 sm:px-6 md:py-24">
-        <p className="mb-3 text-[13px] font-medium tracking-wide text-muted">
-          Aryabhatta & Kautalya · 1st year 2025–26
-        </p>
-        <h1 className="max-w-2xl text-[40px] font-semibold leading-[1.05] tracking-tight sm:text-[48px] md:text-[56px]">
+      <main className="mx-auto max-w-6xl px-4 py-16 sm:px-6">
+        <p className="mb-3 text-[13px] font-medium text-muted">One timetable for every institution</p>
+        <h1 className="max-w-2xl text-[40px] font-semibold leading-[1.05] tracking-tight sm:text-[56px]">
           Know every free classroom.
-          <br />
-          <span className="text-muted">Catch overlaps early.</span>
+          <br /><span className="text-muted">Catch overlaps early.</span>
         </h1>
-        <p className="mt-5 max-w-lg text-[17px] leading-snug text-muted">
-          The 2025–26 timetable is already loaded. Search vacancies, review the
-          grid, or replace it with a new Excel — across all {HALL_COUNT} halls.
+        <p className="mt-5 max-w-lg text-[17px] text-muted">
+          Students open a public link. Editors publish a CSV. Owners invite the rest of the staff.
         </p>
-        <div className="mt-8 flex flex-wrap gap-3">
-          <Link href="/vacancy">
-            <Button size="lg">
-              <DoorOpen className="h-4 w-4" strokeWidth={2.25} />
-              Find a free room
-            </Button>
-          </Link>
-          <Link href="/timetable">
-            <Button variant="secondary" size="lg">
-              <Calendar className="h-4 w-4" strokeWidth={2.25} />
-              Open grid
-            </Button>
-          </Link>
-        </div>
-
-        <div className="mt-16 grid max-w-sm grid-cols-4 gap-2">
-          {[
-            { n: "316", free: false },
-            { n: "317", free: true },
-            { n: "318", free: false },
-            { n: "319", free: true },
-            { n: "320", free: true },
-            { n: "ME-01", free: false },
-            { n: "ME-02", free: true },
-            { n: "ME-03", free: true },
-          ].map((r) => (
-            <div
-              key={r.n}
-              className={`rounded-xl border p-3 ${
-                r.free
-                  ? "border-[rgba(48,209,88,0.28)] bg-[rgba(48,209,88,0.08)]"
-                  : "border-border bg-surface"
-              }`}
-            >
-              <p className="text-[13px] font-semibold tabular-nums tracking-tight">
-                {r.n}
-              </p>
-              <p
-                className={`mt-1 text-[11px] font-medium ${
-                  r.free ? "text-ok" : "text-muted"
-                }`}
-              >
-                {r.free ? "Free" : "Busy"}
-              </p>
-            </div>
+        <form className="mt-8 flex max-w-lg gap-2" action="/">
+          <input
+            name="q"
+            defaultValue={q}
+            placeholder="Search a school"
+            className="h-12 flex-1 rounded-full border border-border bg-elevated px-4 text-[15px] outline-none"
+          />
+          <Button type="submit">Search</Button>
+        </form>
+        <div className="mt-8 grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
+          {schools.map((school) => (
+            <Link key={school.slug} href={`/${school.slug}`} className="rounded-2xl border border-border bg-surface p-5 hover:bg-elevated">
+              <p className="text-[17px] font-semibold">{school.name}</p>
+              <p className="mt-1 text-[13px] text-muted">/{school.slug}</p>
+            </Link>
           ))}
+          {schools.length === 0 && <p className="text-[14px] text-muted">No public institutions match that search.</p>}
         </div>
-
-        <div className="mt-20 grid gap-3 md:grid-cols-3">
-          <Feature
-            icon={<Calendar className="h-5 w-5" strokeWidth={1.75} />}
-            title="Conflict-free publish"
-            body="Hard room overlaps flag on parse. Publish fills the live grid for every hall."
-          />
-          <Feature
-            icon={<DoorOpen className="h-5 w-5" strokeWidth={1.75} />}
-            title="Live vacancy search"
-            body={`Day and time filters over the published grid — all ${HALL_COUNT} rooms, not a sample.`}
-          />
-          <Feature
-            icon={<Users className="h-5 w-5" strokeWidth={1.75} />}
-            title="Section consolidation"
-            body="Upload student lists, see enrollment diffs, and propose merges when sections shrink."
-          />
-        </div>
-
-        <p className="mt-10 text-[13px] text-subtle">
-          <Upload className="mr-1 inline h-3.5 w-3.5" strokeWidth={2} />
-          Replace the seed anytime from{" "}
-          <Link href="/timetable/upload" className="text-muted underline-offset-2 hover:text-fg hover:underline">
-            Upload
-          </Link>
-          .
-        </p>
       </main>
-    </div>
-  );
-}
-
-function Feature({
-  icon,
-  title,
-  body,
-}: {
-  icon: React.ReactNode;
-  title: string;
-  body: string;
-}) {
-  return (
-    <div className="rounded-2xl border border-border bg-surface p-5">
-      <div className="mb-3 flex h-10 w-10 items-center justify-center rounded-full bg-accent-soft text-accent">
-        {icon}
-      </div>
-      <h3 className="text-[17px] font-semibold tracking-tight text-fg">{title}</h3>
-      <p className="mt-1.5 text-[14px] leading-snug text-muted">{body}</p>
     </div>
   );
 }

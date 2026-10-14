@@ -1,0 +1,341 @@
+Section,Day,Start,End,Subject,Room,Type
+SECTION-A,Monday,09:30,10:30,SKILL,316,SKILL
+SECTION-A,Monday,11:30,12:30,Differential Equation & Linear Algebra,316,CLASS
+SECTION-A,Monday,13:30,14:30,Basic Electrical Engineering: A1 & Mechanics for Engineers: A2,316,CLASS
+SECTION-A,Tuesday,09:30,10:30,Basic Electrical Engineering,316,CLASS
+SECTION-A,Tuesday,10:30,11:30,Differential Equation & Linear Algebra,316,CLASS
+SECTION-A,Tuesday,11:30,12:30,Programming in C -304,304,CLASS
+SECTION-A,Tuesday,15:30,16:30,JOB READINESS/ENGLISH,316,CLASS
+SECTION-A,Tuesday,16:30,17:30,"Gender, Human Rights and Ethics-",10,CLASS
+SECTION-A,Wednesday,09:30,10:30,Programming in C-,404,CLASS
+SECTION-A,Wednesday,11:30,12:30,Differential Equation & Linear Algebra,316,CLASS
+SECTION-A,Wednesday,12:30,13:30,Basic Electrical Engineering,316,CLASS
+SECTION-A,Wednesday,14:30,15:30,Mechanics for Engineers,316,CLASS
+SECTION-A,Thursday,09:30,10:30,Programming in C-,404,CLASS
+SECTION-A,Thursday,11:30,12:30,Programming in C -304,304,CLASS
+SECTION-A,Thursday,14:30,15:30,"Gender, Human Rights and Ethics-",10,CLASS
+SECTION-A,Thursday,15:30,16:30,Basic Electrical Engineering,316,CLASS
+SECTION-A,Friday,09:30,10:30,Basic Electrical Engineering: A2 & Mechanics for Engineers: A1,316,CLASS
+SECTION-A,Friday,11:30,12:30,Mechanics for Engineers,316,CLASS
+SECTION-A,Friday,12:30,13:30,JOB READINESS/ENGLISH,316,CLASS
+SECTION-A,Friday,14:30,15:30,SKILL,316,SKILL
+SECTION-B,Monday,09:30,10:30,Differential Equation & Linear Algebra,317,CLASS
+SECTION-B,Monday,10:30,11:30,Mechanics for Engineers,317,CLASS
+SECTION-B,Monday,11:30,12:30,Basic Electrical Engineering,317,CLASS
+SECTION-B,Monday,13:30,14:30,SKILL-Repair and Maintenance of Home Appliances,317,SKILL
+SECTION-B,Tuesday,09:30,10:30,Basic Electrical Engineering: B1 & Mechanics for Engineers: B2,317,CLASS
+SECTION-B,Tuesday,11:30,12:30,"Gender, Human Rights and Ethics -",10,CLASS
+SECTION-B,Tuesday,13:30,14:30,SKILL-Repair and Maintenance of Home Appliances,317,SKILL
+SECTION-B,Tuesday,15:30,16:30,Basic Electrical Engineering,317,CLASS
+SECTION-B,Wednesday,09:30,10:30,Programming in C-,404,CLASS
+SECTION-B,Wednesday,11:30,12:30,"Gender, Human Rights and Ethics-",10,CLASS
+SECTION-B,Wednesday,14:30,15:30,JOB READINESS/ENGLISH,317,CLASS
+SECTION-B,Wednesday,15:30,16:30,Programming in C 302,302,CLASS
+SECTION-B,Thursday,09:30,10:30,Programming in C-,404,CLASS
+SECTION-B,Thursday,11:30,12:30,Differential Equation & Linear Algebra,317,CLASS
+SECTION-B,Thursday,13:30,14:30,Basic Electrical Engineering: B2 & Mechanics for Engineers: B1,317,CLASS
+SECTION-B,Thursday,15:30,16:30,Programming in C 302,302,CLASS
+SECTION-B,Friday,10:30,11:30,Basic Electrical Engineering,317,CLASS
+SECTION-B,Friday,11:30,12:30,Mechanics for Engineers,317,CLASS
+SECTION-B,Friday,13:30,14:30,JOB READINESS/ENGLISH,317,CLASS
+SECTION-B,Friday,14:30,15:30,Differential Equation & Linear Algebra,317,CLASS
+SECTION-C,Monday,09:30,10:30,SKILL-E-Vehicle Assembly and Service Technology,318,SKILL
+SECTION-C,Monday,15:30,16:30,Programming in C-404,404,CLASS
+SECTION-C,Tuesday,10:30,11:30,Mechanics for Engineers,318,CLASS
+SECTION-C,Tuesday,11:30,12:30,JOB READINESS/ENGLISH,318,CLASS
+SECTION-C,Tuesday,16:30,17:30,Differential Equation & Linear Algebra,318,CLASS
+SECTION-C,Wednesday,09:30,10:30,Basic Electrical Engineering,318,CLASS
+SECTION-C,Wednesday,10:30,11:30,Differential Equation & Linear Algebra,318,CLASS
+SECTION-C,Wednesday,11:30,12:30,Basic Electrical Engineering: C2 & Mechanics for Engineers: C1,318,CLASS
+SECTION-C,Wednesday,16:30,17:30,"Gender, Human Rights and Ethics-",10,CLASS
+SECTION-C,Thursday,09:30,10:30,Basic Electrical Engineering,318,CLASS
+SECTION-C,Thursday,11:30,12:30,Mechanics for Engineers,318,CLASS
+SECTION-C,Thursday,13:30,14:30,Programming in C-404,404,CLASS
+SECTION-C,Thursday,15:30,16:30,"Gender, Human Rights and Ethics-",10,CLASS
+SECTION-C,Friday,09:30,10:30,SKILL-E-Vehicle Assembly and Service Technology,318,SKILL
+SECTION-C,Friday,11:30,12:30,JOB READINESS/ENGLISH,318,CLASS
+SECTION-C,Friday,15:30,16:30,Programming in C-402,402,CLASS
+SECTION-C,Saturday,09:30,10:30,Basic Electrical Engineering: C1 & Mechanics for Engineers: C2,318,CLASS
+SECTION-C,Saturday,11:30,12:30,Differential Equation & Linear Algebra,318,CLASS
+SECTION-C,Saturday,13:30,14:30,Programming in C 402,402,CLASS
+SECTION-D,Monday,09:30,10:30,SKILL-Solar PV Microgrid System,319,SKILL
+SECTION-D,Monday,11:30,12:30,JOB READINESS/ENGLISH,317,CLASS
+SECTION-D,Monday,15:30,16:30,Programming in C -404,404,CLASS
+SECTION-D,Tuesday,09:30,10:30,Basic Electrical Engineering,319,CLASS
+SECTION-D,Tuesday,10:30,11:30,Differential Equation & Linear Algebra,319,CLASS
+SECTION-D,Tuesday,11:30,12:30,JOB READINESS/ENGLISH,314,CLASS
+SECTION-D,Wednesday,10:30,11:30,Basic Electrical Engineering,319,CLASS
+SECTION-D,Wednesday,11:30,12:30,"Gender, Human Rights and Ethics-",10,CLASS
+SECTION-D,Wednesday,14:30,15:30,Mechanics for Engineers,319,CLASS
+SECTION-D,Wednesday,15:30,16:30,Programming in C -402,402,CLASS
+SECTION-D,Thursday,09:30,10:30,Basic Electrical Engineering: D1 & Mechanics for Engineers: D2,319,CLASS
+SECTION-D,Thursday,11:30,12:30,"Gender, Human Rights and Ethics-",10,CLASS
+SECTION-D,Thursday,13:30,14:30,Programming in C -404,404,CLASS
+SECTION-D,Thursday,15:30,16:30,Differential Equation & Linear Algebra,319,CLASS
+SECTION-D,Friday,09:30,10:30,Differential Equation & Linear Algebra,319,CLASS
+SECTION-D,Friday,10:30,11:30,Mechanics for Engineers,319,CLASS
+SECTION-D,Friday,11:30,12:30,Basic Electrical Engineering,319,CLASS
+SECTION-D,Friday,13:30,14:30,SKILL-Solar PV Microgrid System,319,SKILL
+SECTION-D,Friday,15:30,16:30,Programming in C 302,302,CLASS
+SECTION-D,Saturday,11:30,12:30,Basic Electrical Engineering: D2 & Mechanics for Engineers: D1,319,CLASS
+SECTION-E,Monday,09:30,10:30,Basic Electrical Engineering,320,CLASS
+SECTION-E,Monday,10:30,11:30,Differential Equation & Linear Algebra,320,CLASS
+SECTION-E,Monday,11:30,12:30,"Gender, Human Rights and Ethics-",10,CLASS
+SECTION-E,Monday,13:30,14:30,Programming in C-404,404,CLASS
+SECTION-E,Monday,15:30,16:30,Basic Electrical Engineering: E1 & Mechanics for Engineers: E2,320,CLASS
+SECTION-E,Tuesday,09:30,10:30,JOB READINESS/ENGLISH,320,CLASS
+SECTION-E,Tuesday,11:30,12:30,Basic Electrical Engineering,320,CLASS
+SECTION-E,Tuesday,14:30,15:30,"Gender, Human Rights and Ethics-",10,CLASS
+SECTION-E,Tuesday,15:30,16:30,SKILL,320,SKILL
+SECTION-E,Wednesday,09:30,10:30,Basic Electrical Engineering,320,CLASS
+SECTION-E,Wednesday,10:30,11:30,Mechanics for Engineers,320,CLASS
+SECTION-E,Wednesday,11:30,12:30,Programming in C-302,302,CLASS
+SECTION-E,Wednesday,14:30,15:30,Differential Equation & Linear Algebra,320,CLASS
+SECTION-E,Wednesday,15:30,16:30,Mechanics for Engineers: E1,320,CLASS
+SECTION-E,Thursday,10:30,11:30,Mechanics for Engineers,320,CLASS
+SECTION-E,Thursday,11:30,12:30,JOB READINESS/ENGLISH,320,CLASS
+SECTION-E,Thursday,13:30,14:30,Programming in C-402,402,CLASS
+SECTION-E,Thursday,15:30,16:30,SKILL,320,SKILL
+SECTION-E,Friday,10:30,11:30,Differential Equation & Linear Algebra,320,CLASS
+SECTION-E,Friday,13:30,14:30,Basic Electrical Engineering: E2,320,CLASS
+SECTION-E,Friday,15:30,16:30,Programming in C-404,404,CLASS
+SECTION-F,Monday,10:30,11:30,Basic Electrical Engineering,ME-01,CLASS
+SECTION-F,Monday,11:30,12:30,"Gender, Human Rights and Ethics",ME-01,CLASS
+SECTION-F,Monday,12:30,13:30,"Gender, Human Rights and Ethics",ME-01,CLASS
+SECTION-F,Monday,14:30,15:30,SKILL-Solar Thermal Engineering,ME-01,SKILL
+SECTION-F,Monday,16:30,17:30,JOB READINESS/ENGLISH,ME-01,CLASS
+SECTION-F,Tuesday,10:30,11:30,Basic Electrical Engineering,ME-01,CLASS
+SECTION-F,Tuesday,11:30,12:30,Programming in C,ME-01,CLASS
+SECTION-F,Tuesday,12:30,13:30,Mechanics for Engineers,ME-01,CLASS
+SECTION-F,Tuesday,14:30,15:30,Programming in C,ME-01,CLASS
+SECTION-F,Tuesday,15:30,16:30,Basic Electrical Engineering: F1 & Mechanics for Engineers: F2,ME-01,CLASS
+SECTION-F,Wednesday,11:30,12:30,Programming in C-ME COMPUTER,ME-01,CLASS
+SECTION-F,Wednesday,14:30,15:30,SKILL-Solar Thermal Engineering,ME-01,SKILL
+SECTION-F,Thursday,09:30,10:30,Mechanics for Engineers,ME-01,CLASS
+SECTION-F,Thursday,11:30,12:30,JOB READINESS/ENGLISH,ME-01,CLASS
+SECTION-F,Thursday,12:30,13:30,Programming in C,ME-01,CLASS
+SECTION-F,Thursday,14:30,15:30,Differential Equation & Linear Algebra,ME-01,CLASS
+SECTION-F,Thursday,15:30,16:30,Basic Electrical Engineering: F2 & Mechanics for Engineers: F1,ME-01,CLASS
+SECTION-F,Friday,09:30,10:30,Programming in C,ME-01,CLASS
+SECTION-F,Friday,10:30,11:30,Basic Electrical Engineering,ME-01,CLASS
+SECTION-F,Friday,11:30,12:30,Programming in C-ME COMPUTER,ME-01,CLASS
+SECTION-F,Friday,15:30,16:30,Differential Equation & Linear Algebra,ME-01,CLASS
+SECTION-F,Friday,16:30,17:30,Differential Equation & Linear Algebra,ME-01,CLASS
+SECTION-G,Monday,09:30,10:30,Discrete Mathematics,ME-02,CLASS
+SECTION-G,Monday,10:30,11:30,Applied engineering materials G-2 & Electronics Devices and Systems G-1,ME-02,CLASS
+SECTION-G,Monday,13:30,14:30,SKILL-Electrical Installation,ME-02,SKILL
+SECTION-G,Tuesday,09:30,10:30,Discrete Mathematics,ME-02,CLASS
+SECTION-G,Tuesday,10:30,11:30,JOB READINESS/ENGLISH,ME-02,CLASS
+SECTION-G,Tuesday,11:30,12:30,Applied engineering materials,ME-02,CLASS
+SECTION-G,Tuesday,13:30,14:30,SKILL-Electrical Installation,ME-02,SKILL
+SECTION-G,Wednesday,09:30,10:30,Electronics Devices and Systems,ME-02,CLASS
+SECTION-G,Wednesday,10:30,11:30,Applied engineering materials,ME-02,CLASS
+SECTION-G,Wednesday,11:30,12:30,Programming in C-404,404,CLASS
+SECTION-G,Wednesday,15:30,16:30,Programming in C-ME COMPUTER,ME-02,CLASS
+SECTION-G,Thursday,09:30,10:30,Electronics Devices and Systems,ME-02,CLASS
+SECTION-G,Thursday,10:30,11:30,Discrete Mathematics,ME-02,CLASS
+SECTION-G,Thursday,11:30,12:30,JOB READINESS/ENGLISH,ME-02,CLASS
+SECTION-G,Thursday,13:30,14:30,Programming in C-404,404,CLASS
+SECTION-G,Thursday,15:30,16:30,Applied engineering materials G-1 & Electronics Devices and Systems G-2,ME-02,CLASS
+SECTION-G,Friday,09:30,10:30,Electronics Devices and Systems,ME-02,CLASS
+SECTION-G,Friday,10:30,11:30,"Gender, Human Rights and Ethics",ME-02,CLASS
+SECTION-G,Friday,11:30,12:30,"Gender, Human Rights and Ethics",ME-02,CLASS
+SECTION-G,Friday,15:30,16:30,Programming in C-ME COMPUTER,ME-02,CLASS
+SECTION-H,Monday,10:30,11:30,JOB READINESS/ENGLISH,ME-03,CLASS
+SECTION-H,Monday,11:30,12:30,Engineering Economics and Costing,ME-03,CLASS
+SECTION-H,Monday,13:30,14:30,SKILL,ME-03,SKILL
+SECTION-H,Monday,15:30,16:30,Applied engineering materials H-1 & Electronics Devices and Systems H-2,ME-03,CLASS
+SECTION-H,Tuesday,09:30,10:30,Applied engineering materials H-2 & Electronics Devices and Systems H-1,ME-03,CLASS
+SECTION-H,Tuesday,11:30,12:30,Electronics Devices and Systems,ME-03,CLASS
+SECTION-H,Tuesday,13:30,14:30,SKILL,ME-03,SKILL
+SECTION-H,Tuesday,15:30,16:30,Programming in C-MAC,ME-03,CLASS
+SECTION-H,Wednesday,09:30,10:30,Discrete Mathematics,ME-03,CLASS
+SECTION-H,Wednesday,10:30,11:30,Applied engineering materials,ME-03,CLASS
+SECTION-H,Wednesday,11:30,12:30,Programming in C-404,404,CLASS
+SECTION-H,Wednesday,14:30,15:30,Engineering Economics and Costing,ME-03,CLASS
+SECTION-H,Wednesday,15:30,16:30,Discrete Mathematics,ME-03,CLASS
+SECTION-H,Wednesday,16:30,17:30,Electronics Devices and Systems,ME-03,CLASS
+SECTION-H,Thursday,09:30,10:30,JOB READINESS/ENGLISH,ME-03,CLASS
+SECTION-H,Thursday,11:30,12:30,Applied engineering materials,ME-03,CLASS
+SECTION-H,Thursday,13:30,14:30,Programming in C-404,404,CLASS
+SECTION-H,Thursday,15:30,16:30,Engineering Economics and Costing,ME-03,CLASS
+SECTION-H,Friday,09:30,10:30,Discrete Mathematics,ME-03,CLASS
+SECTION-H,Friday,10:30,11:30,Electronics Devices and Systems,ME-03,CLASS
+SECTION-H,Friday,15:30,16:30,Programming in C-ME COMPUTER,ME-03,CLASS
+SECTION-I,Monday,09:30,10:30,Electronics Devices and Systems,ME-04,CLASS
+SECTION-I,Monday,10:30,11:30,JOB READINESS/ENGLISH,ME-04,CLASS
+SECTION-I,Monday,11:30,12:30,Programming in C-MAC,ME-04,CLASS
+SECTION-I,Monday,14:30,15:30,SKILL-RC Plane Modelling,ME-04,SKILL
+SECTION-I,Monday,16:30,17:30,Engineering Economics and Costing,ME-04,CLASS
+SECTION-I,Tuesday,09:30,10:30,Programming in C,ME-04,CLASS
+SECTION-I,Tuesday,11:30,12:30,Engineering Economics and Costing,ME-04,CLASS
+SECTION-I,Tuesday,12:30,13:30,Discrete Mathematics,ME-04,CLASS
+SECTION-I,Tuesday,14:30,15:30,SKILL-RC Plane Modelling,ME-04,SKILL
+SECTION-I,Tuesday,16:30,17:30,Dean Interaction/HoD Interaction,ME-04,CLASS
+SECTION-I,Wednesday,09:30,10:30,Electronics Devices and Systems I-2,ME-04,CLASS
+SECTION-I,Wednesday,11:30,12:30,Electronics Devices and Systems-,ME-04,CLASS
+SECTION-I,Wednesday,12:30,13:30,Applied engineering materials,ME-04,CLASS
+SECTION-I,Wednesday,14:30,15:30,Programming in C,ME-04,CLASS
+SECTION-I,Wednesday,15:30,16:30,Engineering Economics and Costing,ME-04,CLASS
+SECTION-I,Wednesday,16:30,17:30,Discrete Mathematics,ME-04,CLASS
+SECTION-I,Thursday,09:30,10:30,Electronics Devices and Systems I-1,ME-04,CLASS
+SECTION-I,Thursday,11:30,12:30,Programming in C,ME-04,CLASS
+SECTION-I,Thursday,12:30,13:30,Electronics Devices and Systems,ME-04,CLASS
+SECTION-I,Thursday,14:30,15:30,JOB READINESS/ENGLISH R.N,ME-04,CLASS
+SECTION-I,Thursday,15:30,16:30,Applied engineering materials I-1,ME-04,CLASS
+SECTION-I,Friday,09:30,10:30,Applied engineering materials,ME-04,CLASS
+SECTION-I,Friday,10:30,11:30,Discrete Mathematics,ME-04,CLASS
+SECTION-I,Friday,11:30,12:30,Programming in C-MAC,ME-04,CLASS
+SECTION-I,Friday,14:30,15:30,Applied engineering materials I-2,ME-04,CLASS
+SECTION-J,Monday,09:30,10:30,Programming in C-MAC,ME-101,CLASS
+SECTION-J,Monday,11:30,12:30,SKILL,ME-101,SKILL
+SECTION-J,Monday,14:30,15:30,Discrete Mathematics,ME-101,CLASS
+SECTION-J,Monday,15:30,16:30,Applied engineering materials,ME-101,CLASS
+SECTION-J,Monday,16:30,17:30,Dean Interaction/HoD Interaction,ME-101,CLASS
+SECTION-J,Tuesday,09:30,10:30,Applied engineering materials,ME-101,CLASS
+SECTION-J,Tuesday,10:30,11:30,Electronics Devices and Systems,ME-101,CLASS
+SECTION-J,Tuesday,11:30,12:30,SKILL,ME-101,SKILL
+SECTION-J,Tuesday,14:30,15:30,"Engineering Economics and Costing,",ME-101,CLASS
+SECTION-J,Tuesday,15:30,16:30,Electronics Devices and Systems J-2,ME-101,CLASS
+SECTION-J,Wednesday,09:30,10:30,Programming in C-MAC,ME-101,CLASS
+SECTION-J,Wednesday,11:30,12:30,Applied Engineering materials J-2,ME-101,CLASS
+SECTION-J,Wednesday,14:30,15:30,"Engineering Economics and Costing,",ME-101,CLASS
+SECTION-J,Wednesday,15:30,16:30,Applied Engineering materials J-1,ME-101,CLASS
+SECTION-J,Thursday,09:30,10:30,Programming in C,ME-101,CLASS
+SECTION-J,Thursday,10:30,11:30,Electronics Devices and Systems,ME-101,CLASS
+SECTION-J,Thursday,11:30,12:30,Discrete Mathematics,ME-101,CLASS
+SECTION-J,Thursday,12:30,13:30,"JOB READINESS/ENGLISH,",ME-101,CLASS
+SECTION-J,Thursday,14:30,15:30,Programming in C,ME-101,CLASS
+SECTION-J,Thursday,15:30,16:30,Programming in C,ME-101,CLASS
+SECTION-J,Friday,09:30,10:30,Electronics Devices and Systems J-1,ME-101,CLASS
+SECTION-J,Friday,11:30,12:30,Discrete Mathematics,ME-101,CLASS
+SECTION-J,Friday,12:30,13:30,Electronics Devices and Systems,ME-101,CLASS
+SECTION-J,Friday,14:30,15:30,"Engineering Economics and Costing,",ME-101,CLASS
+SECTION-J,Friday,15:30,16:30,"JOB READINESS/ENGLISH,",ME-101,CLASS
+SECTION-K,Monday,09:30,10:30,"Electronics Devices and Systems, ME-102",ME-102,CLASS
+SECTION-K,Monday,10:30,11:30,Programming in C-ME-102,ME-102,CLASS
+SECTION-K,Monday,11:30,12:30,SKILL,ME-102,SKILL
+SECTION-K,Monday,14:30,15:30,Discrete Mathematics,ME-102,CLASS
+SECTION-K,Tuesday,09:30,10:30,JOB READINESS/ENGLISH ME-102,ME-102,CLASS
+SECTION-K,Tuesday,10:30,11:30,Applied engineering materials,ME-102,CLASS
+SECTION-K,Tuesday,11:30,12:30,SKILL,ME-102,SKILL
+SECTION-K,Tuesday,14:30,15:30,Discrete Mathematics,ME-102,CLASS
+SECTION-K,Tuesday,16:30,17:30,"Applied engineering materials, ME-102",ME-102,CLASS
+SECTION-K,Wednesday,09:30,10:30,Programming in C,ME-102,CLASS
+SECTION-K,Wednesday,11:30,12:30,Discrete Mathematics,ME-102,CLASS
+SECTION-K,Wednesday,12:30,13:30,"Electronics Devices and Systems, ME-102",ME-102,CLASS
+SECTION-K,Wednesday,15:30,16:30,Applied engineering materials K-2 & Electronics Devices and Systems k-1,ME-102,CLASS
+SECTION-K,Thursday,09:30,10:30,Programming in C-ME COMPUTER,ME-102,CLASS
+SECTION-K,Thursday,11:30,12:30,JOB READINESS/ENGLISH ME-102,ME-102,CLASS
+SECTION-K,Thursday,12:30,13:30,"Engineering Economics and Costing, ME-102",ME-102,CLASS
+SECTION-K,Thursday,14:30,15:30,Programming in C-ME-102,ME-102,CLASS
+SECTION-K,Thursday,16:30,17:30,"Electronics Devices and Systems, ME-102",ME-102,CLASS
+SECTION-K,Friday,09:30,10:30,Programming in C-ME COMPUTER,ME-102,CLASS
+SECTION-K,Friday,11:30,12:30,"Engineering Economics and Costing, ME-102",ME-102,CLASS
+SECTION-K,Friday,12:30,13:30,"Engineering Economics and Costing, ME-102",ME-102,CLASS
+SECTION-K,Friday,15:30,16:30,Applied engineering materials K-2 & Electronics Devices and Systems k-1,ME-102,CLASS
+SECTION-L,Monday,09:30,10:30,Engineering Economics and Costing,ME-103,CLASS
+SECTION-L,Monday,10:30,11:30,Engineering Economics and Costing,ME-103,CLASS
+SECTION-L,Monday,11:30,12:30,Electronics Devices and Systems,ME-103,CLASS
+SECTION-L,Monday,13:30,14:30,SKILL,ME-103,SKILL
+SECTION-L,Tuesday,09:30,10:30,JOB READINESS/ENGLISH,ME-103,CLASS
+SECTION-L,Tuesday,11:30,12:30,Electronics Devices and Systems,ME-103,CLASS
+SECTION-L,Tuesday,13:30,14:30,SKILL,ME-103,SKILL
+SECTION-L,Tuesday,15:30,16:30,Discrete Mathematics,318,CLASS
+SECTION-L,Tuesday,16:30,17:30,Applied engineering materials,ME-103,CLASS
+SECTION-L,Wednesday,09:30,10:30,Engineering Economics and Costing,ME-103,CLASS
+SECTION-L,Wednesday,11:30,12:30,Applied engineering materials,ME-103,CLASS
+SECTION-L,Wednesday,13:30,14:30,Electronics Devices and Systems L1,ME-103,CLASS
+SECTION-L,Wednesday,15:30,16:30,Applied engineering materials L2 Applied engineering materials L1,ME-103,CLASS
+SECTION-L,Thursday,09:30,10:30,Construction Materials -Concrete,ME-103,CLASS
+SECTION-L,Thursday,11:30,12:30,Electronics Devices and Systems,ME-103,CLASS
+SECTION-L,Thursday,13:30,14:30,Electronics Devices and Systems L2,ME-103,CLASS
+SECTION-L,Friday,09:30,10:30,JOB READINESS/ENGLISH,ME-103,CLASS
+SECTION-L,Friday,11:30,12:30,Discrete Mathematics ME-3,ME-03,CLASS
+SECTION-L,Saturday,09:30,10:30,Construction Materials -Geotechnical,ME-103,CLASS
+SECTION-L,Saturday,11:30,12:30,Discrete Mathematics ME-3,ME-03,CLASS
+SECTION-M,Monday,09:30,10:30,Applied engineering materials,316,CLASS
+SECTION-M,Monday,10:30,11:30,Thermodynamics,316,CLASS
+SECTION-M,Monday,14:30,15:30,Applied engineering materials,320,CLASS
+SECTION-M,Monday,15:30,16:30,Electronics Devices and Systems -,320,CLASS
+SECTION-M,Tuesday,09:30,10:30,Electronics Devices and Systems-,317,CLASS
+SECTION-M,Tuesday,10:30,11:30,Engineering Economics and Costing,317,CLASS
+SECTION-M,Tuesday,11:30,12:30,SKILL - =,320,SKILL
+SECTION-M,Tuesday,15:30,16:30,Discrete Mathematics,316,CLASS
+SECTION-M,Tuesday,16:30,17:30,JOB READINESS/ENGLISH=,317,CLASS
+SECTION-M,Wednesday,09:30,10:30,JOB READINESS/ENGLISH,317,CLASS
+SECTION-M,Wednesday,10:30,11:30,1. Thermodynamics,317,CLASS
+SECTION-M,Wednesday,11:30,12:30,Electronics Devices and Systems M1,,CLASS
+SECTION-M,Wednesday,14:30,15:30,1. Thermodynamics () Aero-Thermal Engg.,,CLASS
+SECTION-M,Thursday,09:30,10:30,Engineering Economics and Costing-,317,CLASS
+SECTION-M,Thursday,10:30,11:30,Engineering Economics and Costing,317,CLASS
+SECTION-M,Thursday,11:30,12:30,SKILL-,301,SKILL
+SECTION-M,Thursday,14:30,15:30,1. Thermodynamics () Aero-Thermal Engg.,,CLASS
+SECTION-M,Thursday,16:30,17:30,Discrete Mathematics,317,CLASS
+SECTION-M,Saturday,09:30,10:30,Applied engineering materials M2,,CLASS
+SECTION-M,Saturday,11:30,12:30,Electronics Devices and Systems M2 & Applied engineering materials M1,,CLASS
+SECTION-M,Saturday,14:30,15:30,Discrete Mathematics,317,CLASS
+SECTION-M,Saturday,15:30,16:30,Electronics Devices and Systems,317,CLASS
+SECTION-N,Monday,09:30,10:30,JOB READINESS/ENGLISH R.N:,ME-104,CLASS
+SECTION-N,Monday,10:30,11:30,Basic Electrical Engineering,ME-104,CLASS
+SECTION-N,Monday,11:30,12:30,Programming in C,ME-104,CLASS
+SECTION-N,Monday,14:30,15:30,Programming in C-MAC,ME-104,CLASS
+SECTION-N,Tuesday,09:30,10:30,SKILL,ME-104,SKILL
+SECTION-N,Tuesday,11:30,12:30,Engineering Economics and Costing R.N:,ME-104,CLASS
+SECTION-N,Tuesday,12:30,13:30,Engineering Economics and Costing R.N:,ME-104,CLASS
+SECTION-N,Tuesday,14:30,15:30,Discrete Mathematics,ME-104,CLASS
+SECTION-N,Wednesday,09:30,10:30,SKILL,ME-104,SKILL
+SECTION-N,Wednesday,11:30,12:30,Engineering Economics and Costing R.N:,ME-104,CLASS
+SECTION-N,Wednesday,13:30,14:30,Programming in C-MAC,ME-104,CLASS
+SECTION-N,Thursday,09:30,10:30,Mechanics for Engineers,ME-104,CLASS
+SECTION-N,Thursday,10:30,11:30,Programming in C,ME-104,CLASS
+SECTION-N,Thursday,11:30,12:30,Basic Electrical Engineering: N2 & Mechanics for Engineers: N1,ME-104,CLASS
+SECTION-N,Thursday,14:30,15:30,Basic Electrical Engineering,ME-104,CLASS
+SECTION-N,Thursday,15:30,16:30,Discrete Mathematics R.N:,ME-104,CLASS
+SECTION-N,Friday,09:30,10:30,Basic Electrical Engineering,ME-104,CLASS
+SECTION-N,Friday,10:30,11:30,"""JOB READINESS/ENGLISH",ME-104,CLASS
+SECTION-N,Friday,11:30,12:30,Programming in C,ME-104,CLASS
+SECTION-N,Friday,12:30,13:30,Mechanics for Engineers,ME-104,CLASS
+SECTION-N,Friday,14:30,15:30,Discrete Mathematics R.N:,ME-104,CLASS
+SECTION-N,Friday,15:30,16:30,Basic Electrical Engineering: N1 & Mechanics for Engineers: N2,ME-104,CLASS
+SECTION-O,Monday,09:30,10:30,Basic Electrical Engineering:O1 & Mechanics for Engineers: O2,,CLASS
+SECTION-O,Monday,12:30,13:30,JOB READINESS/ENGLISH,ME-04,CLASS
+SECTION-O,Monday,14:30,15:30,Differential Equation & Linear Algebra -,ME-104,CLASS
+SECTION-O,Tuesday,09:30,10:30,JOB READINESS/ENGLISH,ME-101,CLASS
+SECTION-O,Tuesday,10:30,11:30,Mechanics for Engineers-,ME-04,CLASS
+SECTION-O,Tuesday,11:30,12:30,Basic Electrical Engineering: O2 & Mechanics for Engineers: O1,,CLASS
+SECTION-O,Tuesday,14:30,15:30,Programming in C-,ME-101,CLASS
+SECTION-O,Wednesday,09:30,10:30,Mechanics for Engineers-,ME-101,CLASS
+SECTION-O,Wednesday,11:30,12:30,Programming in C-,ME-101,CLASS
+SECTION-O,Wednesday,14:30,15:30,SKILL-,ME-104,SKILL
+SECTION-O,Wednesday,16:30,17:30,Differential Equation & Linear Algebra -,ME-104,CLASS
+SECTION-O,Thursday,09:30,10:30,"Gender, Human Rights and Ethics 102",,CLASS
+SECTION-O,Thursday,10:30,11:30,"Gender, Human Rights and Ethics",ME-102,CLASS
+SECTION-O,Thursday,11:30,12:30,Programming in C-ME COMPUTER,,CLASS
+SECTION-O,Thursday,14:30,15:30,SKILL-,ME-103,SKILL
+SECTION-O,Friday,09:30,10:30,Basic Electrical Engineering,ME-101,CLASS
+SECTION-O,Friday,10:30,11:30,Basic Electrical Engineering,ME-101,CLASS
+SECTION-O,Friday,11:30,12:30,Programming in C-,ME-04,CLASS
+SECTION-O,Friday,13:30,14:30,Programming in C-ME COMPUTER,,CLASS
+SECTION-O,Friday,15:30,16:30,Differential Equation & Linear Algebra -,ME-104,CLASS
+SECTION-P,Monday,09:30,10:30,Electronics Devices and Systems -,ME-01,CLASS
+SECTION-P,Monday,10:30,11:30,Applied engineering materials- -ME-02,ME-02,CLASS
+SECTION-P,Monday,11:30,12:30,Applied engineering materials,ME-02,CLASS
+SECTION-P,Monday,13:30,14:30,Applied engineering materials P-1 & Electronics Devices and Systems P-2,,CLASS
+SECTION-P,Monday,15:30,16:30,Differential Equation & Linear Algebra-,ME-103,CLASS
+SECTION-P,Tuesday,09:30,10:30,Electronics Devices and Systems -,ME-02,CLASS
+SECTION-P,Tuesday,10:30,11:30,Programming in C ME,,CLASS
+SECTION-P,Tuesday,13:30,14:30,Applied engineering materials P-2 & Electronics Devices and Systems P-1,,CLASS
+SECTION-P,Wednesday,09:30,10:30,SKILL-,ME-04,SKILL
+SECTION-P,Wednesday,13:30,14:30,Engineering Economics and Costing-,ME-103,CLASS
+SECTION-P,Wednesday,14:30,15:30,JOB READINESS/ENGLISH,ME-103,CLASS
+SECTION-P,Wednesday,15:30,16:30,Programming in C-,ME-103,CLASS
+SECTION-P,Thursday,09:30,10:30,SKILL-,ME-103,SKILL
+SECTION-P,Thursday,11:30,12:30,JOB READINESS/ENGLISH,ME-104,CLASS
+SECTION-P,Thursday,13:30,14:30,Programming in C ME,,CLASS
+SECTION-P,Thursday,15:30,16:30,Engineering Economics and Costing-,ME-04,CLASS
+SECTION-P,Thursday,16:30,17:30,Differential Equation & Linear Algebra-,ME-103,CLASS
+SECTION-P,Friday,10:30,11:30,Programming in C-,ME-102,CLASS
+SECTION-P,Friday,11:30,12:30,Programming in C-,ME-01,CLASS
+SECTION-P,Friday,13:30,14:30,Differential Equation & Linear Algebra -,ME-02,CLASS
+SECTION-P,Friday,15:30,16:30,"Engineering Economics and Costing,",ME-02,CLASS
