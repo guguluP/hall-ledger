@@ -96,6 +96,7 @@ async function main() {
       data: slots.slice(i, i + 200).map((slot) => ({
         versionId: version.id,
         roomId: slot.room ? roomIds.get(slot.room.toUpperCase()) || null : null,
+        roomName: slot.room,
         section: slot.section,
         subject: slot.subject,
         type: slot.type,

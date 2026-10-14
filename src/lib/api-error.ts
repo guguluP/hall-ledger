@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { ZodError } from "zod";
 import { HttpError } from "@/lib/http-error";
+import { CsvError } from "@/lib/parse/csv";
 import { zodFields } from "@/lib/schemas";
 
 const UPLOAD_MAX = 1_048_576;
@@ -12,6 +13,9 @@ export function apiError(error: unknown) {
       { error: error.message, ...(error.fields ? { fields: error.fields } : {}) },
       { status: error.status },
     );
+  }
+  if (error instanceof CsvError) {
+    return NextResponse.json({ error: error.message }, { status: 400 });
   }
   if (error instanceof ZodError) {
     return NextResponse.json({ error: "Invalid input", fields: zodFields(error) }, { status: 400 });

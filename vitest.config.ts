@@ -8,8 +8,8 @@ export default defineConfig({
     exclude: ["e2e/**", "node_modules/**", ".next/**"],
     globalSetup: "./tests/global-setup.ts",
     env: {
-      DATABASE_URL: "file:./test.db",
-      APP_URL: "http://localhost:3000",
+      DATABASE_URL: process.env.DATABASE_URL || "file:./test.db",
+      APP_URL: process.env.APP_URL || "http://localhost:3000",
     },
   },
   resolve: {

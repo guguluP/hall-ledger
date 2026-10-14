@@ -6,6 +6,10 @@ import { assertBodyLimit, assertFileSize } from "@/lib/api-error";
 import { DraftSlots } from "@/lib/schemas";
 import { HttpError } from "@/lib/http-error";
 import { applyDemoRoomRules } from "@/lib/rooms";
+import { clientIpFrom } from "@/lib/auth/client-ip";
+import { safeNextPath } from "@/lib/auth/redirect";
+import { apiError } from "@/lib/api-error";
+import { CsvError } from "@/lib/parse/csv";
 
 describe("password, tokens, and guards", () => {
   it("hashes with cost 12 and enforces the 72-byte limit", async () => {
@@ -45,6 +49,21 @@ describe("password, tokens, and guards", () => {
       endMin: 660,
     }));
     expect(DraftSlots.safeParse(tooMany).success).toBe(false);
+  });
+
+  it("ignores a spoofed forwarding header and blocks open redirects", async () => {
+    const previous = process.env.TRUST_PROXY;
+    delete process.env.TRUST_PROXY;
+    expect(clientIpFrom((name) => (name === "x-forwarded-for" ? "9.9.9.9" : null))).toBe("direct");
+    process.env.TRUST_PROXY = "1";
+    expect(clientIpFrom((name) => (name === "x-forwarded-for" ? "9.9.9.9, 203.0.113.8" : null))).toBe("203.0.113.8");
+    expect(clientIpFrom((name) => (name === "x-nf-client-connection-ip" ? "198.51.100.4" : "9.9.9.9"))).toBe("198.51.100.4");
+    if (previous == null) delete process.env.TRUST_PROXY;
+    else process.env.TRUST_PROXY = previous;
+    expect(safeNextPath("/\\evil.com")).toBe("/account");
+    expect(safeNextPath("/account")).toBe("/account");
+    const response = apiError(new CsvError("The file has an unclosed quote."));
+    expect(response.status).toBe(400);
   });
 
   it("keeps demo room rules out of the parser path", () => {

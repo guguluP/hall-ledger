@@ -21,6 +21,19 @@ export function middleware(req: NextRequest) {
       return NextResponse.redirect(url);
     }
   }
+  if (req.method !== "GET" && req.method !== "HEAD" && req.method !== "OPTIONS") {
+    const origin = req.headers.get("origin") || req.headers.get("referer");
+    const host = req.headers.get("host");
+    let originHost = "";
+    try {
+      originHost = origin ? new URL(origin).host : "";
+    } catch {
+      originHost = "";
+    }
+    if (!originHost || !host || originHost !== host) {
+      return NextResponse.json({ error: "Request blocked" }, { status: 403 });
+    }
+  }
   const res = NextResponse.next();
   if (req.cookies.get(SESSION_COOKIE)?.value && !req.cookies.get(CSRF_COOKIE)?.value) {
     res.cookies.set(CSRF_COOKIE, newCsrf(), {

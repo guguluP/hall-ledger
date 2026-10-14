@@ -1,0 +1,15 @@
+# Hall Ledger on Netlify.
+# Set DATABASE_URL to a hosted Postgres URL and APP_URL to the public site
+# in the Netlify UI. A SQLite file does not persist on serverless instances.
+
+[build]
+  command = "npm run build"
+  publish = ".next"
+
+[build.environment]
+  NODE_VERSION = "22"
+  TRUST_PROXY = "1"
+
+[dev]
+  command = "npm run dev"
+  targetPort = 3000

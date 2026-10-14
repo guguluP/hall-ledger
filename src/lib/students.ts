@@ -49,7 +49,7 @@ export function canonSection(raw: string) {
   const match = text.match(/SEC(?:TION)?[-_ ]?([A-Z0-9]+)/);
   if (match) return `SECTION-${match[1]}`.slice(0, 40);
   if (/^[A-Z]$/.test(text)) return `SECTION-${text}`;
-  return text.slice(0, 40);
+  return text;
 }
 
 /** Counts only. Names and roll numbers are not returned. */
@@ -75,7 +75,7 @@ export function countsFromCsv(text: string): SectionCount[] {
   for (let i = headerAt + 1; i < rows.length; i++) {
     const row = rows[i];
     const section = canonSection(row[map.section] || "");
-    if (!section) continue;
+    if (!section || section.length > 40) continue;
     if (map.count != null && map.person == null) {
       const count = parseInt(row[map.count] || "", 10);
       if (!Number.isFinite(count) || count < 0) continue;

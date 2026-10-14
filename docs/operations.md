@@ -24,7 +24,9 @@ Production should use PostgreSQL:
 4. Apply `prisma/postgres/slot-check.sql` so a slot cannot end before it starts.
 5. Run `npm run db:seed` once.
 
-SQLite files do not persist on Vercel or Netlify. Point `DATABASE_URL` at a hosted Postgres database before relying on the live site.
+SQLite files do not persist on Vercel or Netlify. `netlify.toml` builds the Next.js app and does not set `DATABASE_URL`. Put a Postgres URL and `APP_URL` in the host's environment, set `TRUST_PROXY=1` when the platform appends the client IP, and run `npm run db:seed` once.
+
+Login lockout is per email and client IP, so a bad password from somewhere else does not lock the real user. Signup, reset, invites, and new schools are limited per account as well as per IP.
 
 ## Email
 

@@ -16,7 +16,7 @@ import { assertFileSize } from "@/lib/api-error";
 import { countsFromCsv } from "@/lib/students";
 import { decodeUtf8 } from "@/lib/parse/csv";
 import { CsvError } from "@/lib/parse/csv";
-import { replaceStrengths } from "@/lib/timetable-repo";
+import { bustTimetable, replaceStrengths } from "@/lib/timetable-repo";
 import { RoomInput } from "@/lib/schemas";
 import { prisma } from "@/lib/prisma";
 import type { ActionState } from "@/lib/actions/auth";
@@ -57,6 +57,7 @@ export async function settingsAction(_prev: ActionState, formData: FormData): Pr
       isPublic: formData.get("isPublic") === "on",
     });
     nextSlug = updated.slug;
+    await bustTimetable(inst.id);
   } catch (error) {
     return fromError(error);
   }
@@ -101,9 +102,10 @@ export async function roleAction(formData: FormData) {
 export async function removeMemberAction(formData: FormData) {
   const slug = String(formData.get("slug") || "");
   try {
-    const { user, inst } = await requireRole(slug, "ADMIN");
+    const { user, inst, role } = await requireRole(slug, "ADMIN");
     await removeMember({
       actorId: user.id,
+      actorRole: role,
       institutionId: inst.id,
       userId: String(formData.get("userId") || ""),
     });
@@ -161,6 +163,7 @@ export async function roomAction(_prev: ActionState, formData: FormData): Promis
         },
       });
     }
+    await bustTimetable(inst.id);
   } catch (error) {
     return fromError(error);
   }
@@ -172,6 +175,7 @@ export async function deleteRoomAction(formData: FormData) {
   try {
     const { inst } = await requireRole(slug, "ADMIN");
     await prisma.room.deleteMany({ where: { id: String(formData.get("id") || ""), institutionId: inst.id } });
+    await bustTimetable(inst.id);
   } catch (error) {
     console.error("[room]", error);
   }

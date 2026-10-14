@@ -33,9 +33,9 @@ test("sign up, verify, publish a CSV, and search while logged out", async ({ pag
   await page.goto(`/${slug}/manage/upload`);
   await page.locator("input[type=file]").setInputFiles(path.join(process.cwd(), "public/samples/tabular-template.csv"));
   await page.getByRole("button", { name: "Review draft" }).click();
-  await expect(page.getByText(/slots, \d+ conflicts/i)).toBeVisible();
+  await expect(page.getByText(/slots, \d+ conflicts/i)).toBeVisible({ timeout: 30_000 });
   await page.getByRole("button", { name: "Publish" }).click();
-  await expect(page).toHaveURL(new RegExp(`/${slug}/timetable`));
+  await expect(page).toHaveURL(new RegExp(`/${slug}/timetable`), { timeout: 30_000 });
 
   await page.goto("/account");
   await page.getByText("Play Writer").click();

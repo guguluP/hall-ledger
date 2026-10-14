@@ -2,6 +2,7 @@ import { createHash, randomBytes, timingSafeEqual } from "crypto";
 import { cookies } from "next/headers";
 import { cache } from "react";
 import { prisma } from "@/lib/prisma";
+import { clientIpFrom } from "@/lib/auth/client-ip";
 import { SESSION_COOKIE } from "@/lib/auth/constants";
 
 export { SESSION_COOKIE };
@@ -102,7 +103,6 @@ export const getCurrentUser = cache(async () => {
 export async function requestMeta() {
   const { headers } = await import("next/headers");
   const h = await headers();
-  const forwarded = h.get("x-forwarded-for") || "";
-  const ip = forwarded.split(",")[0]?.trim() || h.get("x-real-ip") || "local";
+  const ip = clientIpFrom((name) => h.get(name));
   return { ip, userAgent: h.get("user-agent") };
 }

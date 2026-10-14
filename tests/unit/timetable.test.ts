@@ -40,6 +40,16 @@ describe("timetable parser", () => {
     expect(parsed.hardConflicts).toHaveLength(35);
   });
 
+  it("skips a section name longer than 40 characters", () => {
+    const name = "S".repeat(45);
+    const parsed = parseTimetableCsv(
+      `Section,Day,Start,End,Subject,Room\n${name},Monday,09:30,10:30,Math,316\n`,
+      { knownRooms: ["316"] },
+    );
+    expect(parsed.slots).toHaveLength(0);
+    expect(parsed.warnings.join(" ")).toMatch(/40 characters/);
+  });
+
   it("warns on an unknown room and does not remap it", () => {
     const parsed = parseTimetableCsv(
       "Section,Day,Start,End,Subject,Room\nSECTION-A,Monday,09:30,10:30,Lab,101\n",

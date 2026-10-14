@@ -20,28 +20,30 @@ const FIFTEEN = 15 * 60 * 1000;
 const HOUR = 60 * 60 * 1000;
 const GENERIC_LOGIN = "Invalid email or password";
 
+function pairKey(email: string, ip: string) {
+  return `fail:${email}:${ip}`;
+}
+
 async function noteLoginFailure(email: string, ip: string, userId?: string) {
   await recordAttempt(`ip:${ip}`);
-  await recordAttempt(`email:${email}`);
-  const failures = await countAttempts(`email:${email}`, FIFTEEN);
+  await recordAttempt(pairKey(email, ip));
+  const failures = await countAttempts(pairKey(email, ip), FIFTEEN);
   if (!userId) return failures;
-  const lock = failures >= 5;
   await prisma.user.update({
     where: { id: userId },
-    data: {
-      failedLogins: failures,
-      lockedUntil: lock ? new Date(Date.now() + FIFTEEN) : null,
-    },
+    data: { failedLogins: failures, lockedUntil: null },
   });
-  if (lock) await audit("lockout", { userId, details: "login" });
+  if (failures >= 5) await audit("lockout", { userId, details: ip });
   return failures;
 }
 
 export async function signup(input: unknown, meta: { ip: string; userAgent?: string | null }) {
-  await assertIpLimit(`signup:${meta.ip}`, 5, HOUR);
-  await recordAttempt(`signup:${meta.ip}`);
   const parsed = Signup.safeParse(input);
   if (!parsed.success) throw new HttpError(400, "Check the form", zodFields(parsed.error));
+  await assertIpLimit(`signup:${meta.ip}`, 5, HOUR);
+  await assertIpLimit(`signup-email:${parsed.data.email}`, 5, HOUR);
+  await recordAttempt(`signup:${meta.ip}`);
+  await recordAttempt(`signup-email:${parsed.data.email}`);
   const existing = await prisma.user.findUnique({ where: { email: parsed.data.email } });
   const passwordHash = await hashPassword(parsed.data.password);
   if (existing) {
@@ -56,7 +58,12 @@ export async function signup(input: unknown, meta: { ip: string; userAgent?: str
   });
   const token = await issueToken(user.id, "EMAIL_VERIFY");
   const link = linkFor(`/auth/verify?token=${token}`);
-  await sendMail(user.email, "Verify your Hall Ledger email", `Open this link and confirm: ${link}`, link);
+  try {
+    await sendMail(user.email, "Verify your Hall Ledger email", `Open this link and confirm: ${link}`, link);
+  } catch (error) {
+    await prisma.user.delete({ where: { id: user.id } }).catch(() => undefined);
+    throw error;
+  }
   const session = await createSession(user.id, meta);
   await audit("signup", { userId: user.id });
   return { created: true as const, session, message: "Account created. Check your email to verify it." };
@@ -67,11 +74,12 @@ export async function login(input: unknown, meta: { ip: string; userAgent?: stri
   if (!parsed.success) throw new HttpError(400, GENERIC_LOGIN);
   const ipCount = await countAttempts(`ip:${meta.ip}`, FIFTEEN);
   if (ipCount >= 20) throw new HttpError(429, "Too many attempts. Try again later.");
-  const user = await prisma.user.findUnique({ where: { email: parsed.data.email } });
-  if (user?.lockedUntil && user.lockedUntil > new Date()) {
+  const pairFailures = await countAttempts(pairKey(parsed.data.email, meta.ip), FIFTEEN);
+  if (pairFailures >= 5) {
     await recordAttempt(`ip:${meta.ip}`);
     throw new HttpError(401, GENERIC_LOGIN);
   }
+  const user = await prisma.user.findUnique({ where: { email: parsed.data.email } });
   const ok = user
     ? await verifyPassword(parsed.data.password, user.passwordHash)
     : await dummyVerify(parsed.data.password);
@@ -110,10 +118,13 @@ export async function verifyEmail(token: string) {
 }
 
 export async function requestPasswordReset(email: string, ip: string) {
+  const normalized = email.toLowerCase().trim();
   await assertIpLimit(`reset:${ip}`, 5, HOUR);
+  await assertIpLimit(`reset-email:${normalized}`, 5, HOUR);
   await recordAttempt(`reset:${ip}`);
+  await recordAttempt(`reset-email:${normalized}`);
   const message = "If that email exists, we sent a link.";
-  const user = await prisma.user.findUnique({ where: { email: email.toLowerCase().trim() } });
+  const user = await prisma.user.findUnique({ where: { email: normalized } });
   if (!user) {
     await dummyVerify(email);
     return message;
@@ -168,6 +179,8 @@ export async function createInstitution(userId: string, input: unknown) {
   const user = await prisma.user.findUnique({ where: { id: userId } });
   if (!user) throw new HttpError(401, "Sign in required");
   if (!user.emailVerifiedAt) throw new HttpError(403, "Verify your email before creating an institution.");
+  await assertIpLimit(`school:${userId}`, 5, HOUR);
+  await recordAttempt(`school:${userId}`);
   const parsed = InstitutionInput.safeParse(input);
   if (!parsed.success) throw new HttpError(400, "Check the form", zodFields(parsed.error));
   const taken = await prisma.institution.findUnique({ where: { slug: parsed.data.slug } });
@@ -215,6 +228,8 @@ export async function inviteMember(opts: {
   if (!isRole(opts.role) || opts.role === "OWNER") {
     throw new HttpError(400, "Choose viewer, editor, or admin.");
   }
+  await assertIpLimit(`invite:${opts.invitedById}`, 20, HOUR);
+  await recordAttempt(`invite:${opts.invitedById}`);
   const email = opts.email.toLowerCase().trim();
   if (!/^[^\s@]+@[^\s@]+$/.test(email) || email.length > 254) throw new HttpError(400, "Enter a valid email.");
   const raw = newRawToken();
@@ -245,6 +260,12 @@ export async function acceptInvite(raw: string, userId: string) {
     throw new HttpError(403, "This invite was sent to a different email.");
   }
   if (!isRole(invite.role)) throw new HttpError(400, "This invite is invalid or has expired.");
+  const existing = await prisma.membership.findUnique({
+    where: { institutionId_userId: { institutionId: invite.institutionId, userId } },
+  });
+  const current = existing && isRole(existing.role) ? existing.role : null;
+  const nextRole = current && RANK[current] >= RANK[invite.role] ? current : invite.role;
+  await assertLastOwner(invite.institutionId, userId, nextRole);
   const claimed = await prisma.invite.updateMany({
     where: { id: invite.id, acceptedAt: null },
     data: { acceptedAt: new Date() },
@@ -252,8 +273,8 @@ export async function acceptInvite(raw: string, userId: string) {
   if (claimed.count !== 1) throw new HttpError(400, "This invite is invalid or has expired.");
   await prisma.membership.upsert({
     where: { institutionId_userId: { institutionId: invite.institutionId, userId } },
-    update: { role: invite.role },
-    create: { institutionId: invite.institutionId, userId, role: invite.role },
+    update: { role: nextRole },
+    create: { institutionId: invite.institutionId, userId, role: nextRole },
   });
   await audit("invite-accept", { userId, institutionId: invite.institutionId, details: invite.role });
   return invite.institution.slug;
@@ -268,6 +289,11 @@ export async function setMemberRole(opts: {
 }) {
   if (!isRole(opts.role)) throw new HttpError(400, "Unknown role");
   if (RANK[opts.role] > RANK[opts.actorRole]) throw new HttpError(403, "You cannot grant that role");
+  const target = await prisma.membership.findUnique({
+    where: { institutionId_userId: { institutionId: opts.institutionId, userId: opts.userId } },
+  });
+  if (!target || !isRole(target.role)) throw new HttpError(404, "Member not found");
+  assertOutranks(opts.actorRole, target.role);
   await assertLastOwner(opts.institutionId, opts.userId, opts.role);
   await prisma.membership.update({
     where: { institutionId_userId: { institutionId: opts.institutionId, userId: opts.userId } },
@@ -276,7 +302,26 @@ export async function setMemberRole(opts: {
   await audit("role-change", { userId: opts.actorId, institutionId: opts.institutionId, details: opts.role });
 }
 
-export async function removeMember(opts: { actorId: string; institutionId: string; userId: string }) {
+function assertOutranks(actorRole: Role, targetRole: Role) {
+  if (targetRole === "OWNER" && actorRole !== "OWNER") {
+    throw new HttpError(403, "Only an owner can change another owner");
+  }
+  if (actorRole !== "OWNER" && RANK[actorRole] <= RANK[targetRole]) {
+    throw new HttpError(403, "You cannot change that member");
+  }
+}
+
+export async function removeMember(opts: {
+  actorId: string;
+  actorRole: Role;
+  institutionId: string;
+  userId: string;
+}) {
+  const target = await prisma.membership.findUnique({
+    where: { institutionId_userId: { institutionId: opts.institutionId, userId: opts.userId } },
+  });
+  if (!target || !isRole(target.role)) throw new HttpError(404, "Member not found");
+  assertOutranks(opts.actorRole, target.role);
   await assertLastOwner(opts.institutionId, opts.userId, null);
   await prisma.membership.delete({
     where: { institutionId_userId: { institutionId: opts.institutionId, userId: opts.userId } },

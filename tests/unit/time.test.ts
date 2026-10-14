@@ -12,6 +12,7 @@ describe("time and vacancy", () => {
     expect(VacancyQuery.safeParse({ day: 1, start: "10:00", end: "10:00" }).success).toBe(false);
     expect(VacancyQuery.safeParse({ day: 1, start: "24:00", end: "25:00" }).success).toBe(false);
     expect(VacancyQuery.safeParse({ day: 9, start: "10:00", end: "11:00" }).success).toBe(false);
+    expect(VacancyQuery.safeParse({ day: "", start: "10:00", end: "11:00" }).success).toBe(false);
     const ok = VacancyQuery.safeParse({ day: "1", start: "08:00", end: "21:00" });
     expect(ok.success).toBe(true);
     if (ok.success) expect(ok.data.endMin - ok.data.startMin).toBe(13 * 60);

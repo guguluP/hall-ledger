@@ -69,18 +69,24 @@ export function UploadForm({ slug }: { slug: string }) {
   async function publish() {
     if (!draft) return;
     setStatus("working");
-    const res = await fetch(`/api/i/${slug}/versions/${draft.versionId}/publish`, {
-      method: "POST",
-      headers: { "x-csrf-token": csrfToken() },
-    });
-    const data = await res.json();
-    if (!res.ok) {
-      setError(data.error || "Publish failed");
+    setError("");
+    try {
+      const res = await fetch(`/api/i/${slug}/versions/${draft.versionId}/publish`, {
+        method: "POST",
+        headers: { "x-csrf-token": csrfToken() },
+      });
+      const data = await res.json();
+      if (!res.ok) {
+        setError(data.error || "Publish failed");
+        setStatus("error");
+        return;
+      }
+      router.push(`/${slug}/timetable`);
+      router.refresh();
+    } catch {
+      setError("Publish failed");
       setStatus("error");
-      return;
     }
-    router.push(`/${slug}/timetable`);
-    router.refresh();
   }
 
   return (

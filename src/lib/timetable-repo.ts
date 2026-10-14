@@ -7,6 +7,7 @@ import { countAttempts, recordAttempt } from "@/lib/auth/rate-limit";
 import { decodeUtf8 } from "@/lib/parse/csv";
 import { detectHardConflicts, parseTimetableCsv, type SlotIn } from "@/lib/parse/timetable";
 import { DraftSlots } from "@/lib/schemas";
+import { buildingOf, isLabRoom } from "@/lib/rooms";
 import { fromMinutes } from "@/lib/time";
 import type { Role } from "@/lib/auth/roles";
 
@@ -62,10 +63,13 @@ export async function loadPublishedView(institutionId: string): Promise<Publishe
   });
   if (!version || version.status !== "PUBLISHED" || version.timetableId !== timetable.id) return empty;
   const byId = new Map(rooms.map((room) => [room.id, room]));
+  const byName = new Map(rooms.map((room) => [room.name.toUpperCase(), room]));
   const slots = version.slots.map((slot) => {
-    const room = slot.roomId ? byId.get(slot.roomId) : undefined;
+    const linked = slot.roomId ? byId.get(slot.roomId) : undefined;
+    const named = slot.roomName ? byName.get(slot.roomName.toUpperCase()) : undefined;
+    const classroomName = linked?.name || named?.name || slot.roomName || "";
     return {
-      classroomName: room?.name || "",
+      classroomName,
       sectionName: slot.section,
       subjectName: slot.subject,
       dayOfWeek: slot.dayOfWeek,
@@ -75,13 +79,24 @@ export async function loadPublishedView(institutionId: string): Promise<Publishe
       endMin: slot.endMin,
     };
   });
+  const listed = new Map(roomRows.map((room) => [room.name.toUpperCase(), room]));
+  for (const slot of slots) {
+    if (!slot.classroomName || listed.has(slot.classroomName.toUpperCase())) continue;
+    listed.set(slot.classroomName.toUpperCase(), {
+      name: slot.classroomName,
+      building: buildingOf(slot.classroomName),
+      capacity: 60,
+      isLab: isLabRoom(slot.classroomName),
+    });
+  }
+  const visibleRooms = [...listed.values()];
   const inUse = new Set(slots.map((slot) => slot.classroomName).filter(Boolean));
   return {
     slots,
-    rooms: roomRows,
+    rooms: visibleRooms,
     stats: {
       slots: slots.length,
-      rooms: roomRows.length,
+      rooms: visibleRooms.length,
       roomsInUse: inUse.size,
       sections: new Set(slots.map((slot) => slot.sectionName).filter(Boolean)).size,
       conflicts: version.conflictCount,
@@ -103,6 +118,38 @@ export async function bustTimetable(institutionId: string) {
       console.warn("[timetable] revalidate skipped", error);
     }
   }
+}
+
+async function pruneDrafts(timetableId: string, keepId: string) {
+  const drafts = await prisma.timetableVersion.findMany({
+    where: { timetableId, status: "DRAFT" },
+    orderBy: { createdAt: "desc" },
+    select: { id: true },
+  });
+  const drop = drafts.filter((draft, index) => draft.id !== keepId && index >= 10).map((draft) => draft.id);
+  if (drop.length) await prisma.timetableVersion.deleteMany({ where: { id: { in: drop } } });
+}
+
+function isLockError(error: unknown) {
+  if (!error || typeof error !== "object") return false;
+  const code = "code" in error ? String(error.code) : "";
+  const message = error instanceof Error ? error.message : "";
+  return code === "P1008" || code === "P2034" || /database is locked|SQLITE_BUSY|timeout/i.test(message);
+}
+
+async function withDbRetry<T>(run: () => Promise<T>) {
+  for (let attempt = 0; attempt < 3; attempt++) {
+    try {
+      return await run();
+    } catch (error) {
+      if (error instanceof HttpError || !isLockError(error) || attempt === 2) {
+        if (isLockError(error)) throw new HttpError(409, "Publish is already in progress");
+        throw error;
+      }
+      await new Promise((resolve) => setTimeout(resolve, 40 * (attempt + 1)));
+    }
+  }
+  throw new HttpError(409, "Publish is already in progress");
 }
 
 async function mainTimetable(institutionId: string) {
@@ -146,6 +193,7 @@ export async function createDraft(opts: {
   const rows = checked.data.map((slot) => ({
     versionId: version.id,
     roomId: slot.room ? byName.get(slot.room.toUpperCase()) || null : null,
+    roomName: slot.room,
     section: slot.section,
     subject: slot.subject,
     type: slot.type,
@@ -156,6 +204,7 @@ export async function createDraft(opts: {
   for (let i = 0; i < rows.length; i += 200) {
     await prisma.slot.createMany({ data: rows.slice(i, i + 200) });
   }
+  await pruneDrafts(timetable.id, version.id);
   return {
     versionId: version.id,
     summary: {
@@ -178,7 +227,7 @@ export async function publishVersionFor(opts: {
   if (!opts.emailVerifiedAt) {
     throw new HttpError(403, "Verify your email before publishing.");
   }
-  await prisma.$transaction(async (tx) => {
+  await withDbRetry(() => prisma.$transaction(async (tx) => {
     const version = await tx.timetableVersion.findUnique({
       where: { id: opts.versionId },
       include: { timetable: true },
@@ -200,7 +249,7 @@ export async function publishVersionFor(opts: {
       where: { id: version.timetableId },
       data: { activeVersionId: version.id },
     });
-  });
+  }));
   await audit("publish", { userId: opts.userId, institutionId: opts.institutionId, details: opts.versionId });
   await bustTimetable(opts.institutionId);
 }

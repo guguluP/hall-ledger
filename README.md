@@ -31,6 +31,6 @@ Only section counts are stored. Student names and roll numbers are not.
 
 ## Production
 
-Use PostgreSQL, set `APP_URL`, and configure SMTP. See [docs/operations.md](docs/operations.md) for the provider switch, the slot check constraint, and `pg_dump` backups.
+Use PostgreSQL, set `APP_URL`, and configure SMTP. `netlify.toml` builds the site and leaves `DATABASE_URL` to the host. See [docs/operations.md](docs/operations.md) for the provider switch, the slot check constraint, and `pg_dump` backups.
 
 Old paths redirect to the demo school: `/timetable` and `/grid` to `/demo/timetable`, `/vacancy` to `/demo/find`.

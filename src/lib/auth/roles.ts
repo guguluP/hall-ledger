@@ -24,4 +24,13 @@ export const RESERVED_SLUGS = new Set([
   "new",
   "_next",
   "samples",
+  "manage",
+  "timetable",
+  "vacancy",
+  "grid",
+  "dashboard",
+  "find",
+  "section",
+  "students",
+  "health",
 ]);

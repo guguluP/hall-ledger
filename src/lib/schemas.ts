@@ -2,7 +2,10 @@ import { z } from "zod";
 import { passwordIssue } from "@/lib/auth/password";
 import { RESERVED_SLUGS } from "@/lib/auth/roles";
 
-const Day = z.coerce.number().int().min(0).max(6);
+const Day = z.preprocess(
+  (value) => (value == null || value === "" ? undefined : String(value).trim()),
+  z.string({ required_error: "Day is required" }).min(1, "Day is required").pipe(z.coerce.number().int().min(0).max(6)),
+);
 const Time = z.string().trim().regex(/^([01]?\d|2[0-3])[:.][0-5]\d$/, "Use a 24-hour time");
 
 function clockToMinutes(value: string) {

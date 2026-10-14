@@ -4,5 +4,6 @@ import { loadPublishedView } from "@/lib/timetable-repo";
 export function getPublished(institutionId: string) {
   return unstable_cache(() => loadPublishedView(institutionId), ["tt", institutionId], {
     tags: [`tt:${institutionId}`],
+    revalidate: 60,
   })();
 }

@@ -3,6 +3,7 @@ import { defineConfig, devices } from "@playwright/test";
 export default defineConfig({
   testDir: "e2e",
   timeout: 120_000,
+  expect: { timeout: 20_000 },
   use: { baseURL: "http://127.0.0.1:3100", trace: "retain-on-failure" },
   webServer: {
     command: "npx prisma db push --skip-generate --accept-data-loss && npx tsx prisma/seed.ts && npx next dev -p 3100",

@@ -139,6 +139,7 @@ model Slot {
   id        String           @id @default(cuid())
   versionId String
   roomId    String?
+  roomName  String?
   section   String
   subject   String?
   type      String

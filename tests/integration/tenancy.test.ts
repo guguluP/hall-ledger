@@ -7,8 +7,9 @@ import { login, requestPasswordReset, resetPassword, signup, verifyEmail } from 
 import { requireRoleForUser, visibleInstitution } from "@/lib/auth/authz";
 import { userFromSessionToken } from "@/lib/auth/session";
 import { consumeToken } from "@/lib/auth/tokens";
-import { createDraft, publishVersionFor } from "@/lib/timetable-repo";
-import { removeMember, setMemberRole } from "@/lib/auth/service";
+import { createDraft, loadPublishedView, publishVersionFor } from "@/lib/timetable-repo";
+import { acceptInvite, inviteMember, removeMember, setMemberRole } from "@/lib/auth/service";
+import { findAvailability } from "@/lib/occupancy";
 import { DEV_MAIL_LOG } from "@/lib/mail";
 
 const meta = { ip: "203.0.113.10", userAgent: "vitest" };
@@ -64,9 +65,9 @@ describe("auth and tenancy", () => {
     for (let i = 0; i < 5; i++) {
       await expect(login({ email: "ada@school.test", password: "wrong-horse" }, { ...meta, ip: "203.0.113.20" })).rejects.toMatchObject({ status: 401 });
     }
-    const locked = await prisma.user.findUniqueOrThrow({ where: { email: "ada@school.test" } });
-    expect(locked.lockedUntil && locked.lockedUntil > new Date()).toBeTruthy();
-    await expect(login({ email: "ada@school.test", password: "correct-horse" }, { ...meta, ip: "203.0.113.21" })).rejects.toMatchObject({ status: 401 });
+    await expect(login({ email: "ada@school.test", password: "correct-horse" }, { ...meta, ip: "203.0.113.20" })).rejects.toMatchObject({ status: 401 });
+    const elsewhere = await login({ email: "ada@school.test", password: "correct-horse" }, { ...meta, ip: "203.0.113.21" });
+    expect(elsewhere.userId).toBeTruthy();
   });
 
   it("resets the password and rejects a used or expired token", async () => {
@@ -124,6 +125,65 @@ describe("auth and tenancy", () => {
     expect(rolled.activeVersionId).toBe(draft.versionId);
 
     await expect(setMemberRole({ actorId: owner.id, actorRole: "OWNER", institutionId: school.id, userId: owner.id, role: "ADMIN" })).rejects.toMatchObject({ status: 400 });
-    await expect(removeMember({ actorId: owner.id, institutionId: school.id, userId: owner.id })).rejects.toMatchObject({ status: 400 });
+    await expect(removeMember({ actorId: owner.id, actorRole: "OWNER", institutionId: school.id, userId: owner.id })).rejects.toMatchObject({ status: 400 });
+  });
+
+  it("keeps room names when the room list is empty, and protects owners", async () => {
+    const owner = await verifiedUser("alice@owners.test");
+    const admin = await verifiedUser("eve@owners.test");
+    const school = await prisma.institution.create({ data: { slug: "east", name: "East", isPublic: true } });
+    await prisma.membership.createMany({
+      data: [
+        { institutionId: school.id, userId: owner.id, role: "OWNER" },
+        { institutionId: school.id, userId: admin.id, role: "ADMIN" },
+      ],
+    });
+    await expect(setMemberRole({
+      actorId: admin.id,
+      actorRole: "ADMIN",
+      institutionId: school.id,
+      userId: owner.id,
+      role: "VIEWER",
+    })).rejects.toMatchObject({ status: 403 });
+    await expect(removeMember({
+      actorId: admin.id,
+      actorRole: "ADMIN",
+      institutionId: school.id,
+      userId: owner.id,
+    })).rejects.toMatchObject({ status: 403 });
+
+    await inviteMember({
+      institutionId: school.id,
+      invitedById: admin.id,
+      email: owner.email,
+      role: "VIEWER",
+      slug: "east",
+    });
+    await acceptInvite(lastToken(), owner.id);
+    const membership = await prisma.membership.findUniqueOrThrow({
+      where: { institutionId_userId: { institutionId: school.id, userId: owner.id } },
+    });
+    expect(membership.role).toBe("OWNER");
+
+    const csv = new TextEncoder().encode("Section,Day,Start,End,Subject,Room\nSECTION-A,Monday,09:30,10:30,Physics,316\n");
+    const draft = await createDraft({
+      institutionId: school.id,
+      userId: owner.id,
+      fileName: "one.csv",
+      bytes: csv,
+    });
+    const stored = await prisma.slot.findFirstOrThrow({ where: { versionId: draft.versionId } });
+    expect(stored.roomId).toBeNull();
+    expect(stored.roomName).toBe("316");
+    await publishVersionFor({
+      institutionId: school.id,
+      userId: owner.id,
+      versionId: draft.versionId,
+      emailVerifiedAt: owner.emailVerifiedAt,
+    });
+    const view = await loadPublishedView(school.id);
+    expect(view.slots[0]?.classroomName).toBe("316");
+    const availability = findAvailability(view.rooms, view.slots, 1, "09:30", "10:30");
+    expect(availability.free.some((room) => room.name === "316")).toBe(false);
   });
 });

@@ -16,13 +16,12 @@ import {
 } from "@/lib/auth/service";
 import { clearSessionCookie, requestMeta, SESSION_COOKIE, setSessionCookie } from "@/lib/auth/session";
 import { getCurrentUser } from "@/lib/auth/session";
+import { safeNextPath } from "@/lib/auth/redirect";
 
 export type ActionState = { error?: string; ok?: string; fields?: Record<string, string> } | null;
 
 function safeNext(value: FormDataEntryValue | null) {
-  const next = String(value || "");
-  if (!next.startsWith("/") || next.startsWith("//")) return "/account";
-  return next;
+  return safeNextPath(String(value || ""));
 }
 
 function fromError(error: unknown): ActionState {

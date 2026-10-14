@@ -132,10 +132,16 @@ function rangeFrom(cell: string): { startMin: number; endMin: number } | null {
 function sectionFrom(raw: string, fallback: string) {
   const text = raw.trim();
   const match = text.match(/SEC(?:TION)?[-_ ]?([A-Z0-9]+)/i);
-  if (match) return `SECTION-${match[1].toUpperCase()}`.slice(0, 40);
+  if (match) return `SECTION-${match[1].toUpperCase()}`;
   if (/^[A-Za-z]$/.test(text)) return `SECTION-${text.toUpperCase()}`;
   const cleaned = text.replace(/\s+/g, " ").trim();
-  return (cleaned || fallback).slice(0, 40);
+  return cleaned || fallback;
+}
+
+function keepSection(section: string, warnings: string[], where: string) {
+  if (section.length <= 40) return section;
+  warnings.push(`${where}: section name is longer than 40 characters and was skipped.`);
+  return null;
 }
 
 function sectionHintFromFile(fileName?: string) {
@@ -227,7 +233,9 @@ function parseTabular(rows: string[][], map: Record<string, number>, knownRooms:
       }
     }
     const section = sectionFrom(map.section != null ? row[map.section] || "" : "", fallback);
-    if (!section || section === "SECTION") {
+    const kept = keepSection(section, warnings, `Row ${i + 1}`);
+    if (!kept || kept === "SECTION") {
+      if (!kept) continue;
       warnings.push(`Row ${i + 1} is missing a section.`);
       continue;
     }
@@ -237,7 +245,7 @@ function parseTabular(rows: string[][], map: Record<string, number>, knownRooms:
     if (matched.warning) warnings.push(`Row ${i + 1}: ${matched.warning}`);
     const typeRaw = map.type != null ? (row[map.type] || "").trim() : detectType(subjectRaw);
     slots.push({
-      section,
+      section: kept,
       subject: subjectRaw ? cleanSubject(subjectRaw) || subjectRaw.slice(0, 120) : null,
       room: matched.room,
       type: (typeRaw || "CLASS").slice(0, 20),
@@ -295,9 +303,11 @@ function parseGrid(rows: string[][], knownRooms: string[], fileName?: string): T
       if (type === "LUNCH" || type === "CSR") continue;
       const roomRaw = explicitRoom(raw) || defaultRoom;
       const matched = matchKnown(roomRaw, knownRooms);
-      if (matched.warning) warnings.push(`${sectionName} ${DAY_NAMES[day]}: ${matched.warning}`);
+      const kept = keepSection(sectionName, warnings, `${DAY_NAMES[day]}`);
+      if (!kept) continue;
+      if (matched.warning) warnings.push(`${kept} ${DAY_NAMES[day]}: ${matched.warning}`);
       slots.push({
-        section: sectionName,
+        section: kept,
         subject: cleanSubject(raw) || raw.slice(0, 120),
         room: matched.room,
         type: type.slice(0, 20),
