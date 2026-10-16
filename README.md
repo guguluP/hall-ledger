@@ -8,13 +8,13 @@ The demo school is seeded from the 2025–26 first-year timetable: 16 sections, 
 
 ```bash
 npm install
-cp .env.example .env
-npx prisma db push
+cp .env.example .env   # point DATABASE_URL / DIRECT_URL at a local Postgres
+npx prisma migrate deploy
 npm run db:seed
 npm run dev
 ```
 
-Open http://localhost:3000. The demo timetable is at `/demo`. The seeded owner is `owner@demo.hallledger.test` / `DemoOwner-2026`. Change that password before sharing a deployment.
+Open http://localhost:3000. The demo timetable is at `/demo`. The local seeded owner is `owner@demo.hallledger.test` / `DemoOwner-2026` (override with `SEED_OWNER_PASSWORD`). Production runs on Supabase Postgres; see `docs/operations.md`.
 
 Auth is built in: bcrypt passwords, hashed session ids in `__Host-hl_session`, and email links for verification, reset, and invites. Without SMTP, development writes those links to `.mail-dev.log`.
 

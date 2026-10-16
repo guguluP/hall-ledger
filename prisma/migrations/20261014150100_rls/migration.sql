@@ -1,0 +1,16 @@
+-- The app connects server-side through Prisma as a privileged role, which
+-- bypasses RLS. Enabling RLS with no policies blocks the Supabase anon and
+-- authenticated roles (PostgREST / Data API) from reading or writing any table.
+ALTER TABLE "User" ENABLE ROW LEVEL SECURITY;
+ALTER TABLE "Session" ENABLE ROW LEVEL SECURITY;
+ALTER TABLE "AuthToken" ENABLE ROW LEVEL SECURITY;
+ALTER TABLE "LoginAttempt" ENABLE ROW LEVEL SECURITY;
+ALTER TABLE "Institution" ENABLE ROW LEVEL SECURITY;
+ALTER TABLE "Membership" ENABLE ROW LEVEL SECURITY;
+ALTER TABLE "Invite" ENABLE ROW LEVEL SECURITY;
+ALTER TABLE "Room" ENABLE ROW LEVEL SECURITY;
+ALTER TABLE "Timetable" ENABLE ROW LEVEL SECURITY;
+ALTER TABLE "TimetableVersion" ENABLE ROW LEVEL SECURITY;
+ALTER TABLE "Slot" ENABLE ROW LEVEL SECURITY;
+ALTER TABLE "SectionStrength" ENABLE ROW LEVEL SECURITY;
+ALTER TABLE "AuditLog" ENABLE ROW LEVEL SECURITY;

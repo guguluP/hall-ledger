@@ -1,6 +1,7 @@
 # Hall Ledger on Netlify.
-# Set DATABASE_URL to a hosted Postgres URL and APP_URL to the public site
-# in the Netlify UI. A SQLite file does not persist on serverless instances.
+# Set DATABASE_URL (Supabase transaction pooler, port 6543, ?pgbouncer=true&connection_limit=1),
+# DIRECT_URL (Supabase direct/session connection, port 5432), APP_URL, SESSION_SECRET
+# and SMTP_* in the Netlify UI. See docs/operations.md.
 
 [build]
   command = "npm run build"
