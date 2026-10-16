@@ -13,13 +13,14 @@ export default defineConfig({
   expect: { timeout: 20_000 },
   use: { baseURL: "http://127.0.0.1:3100", trace: "retain-on-failure" },
   webServer: {
-    command: "npx prisma migrate deploy && npx tsx prisma/seed.ts && npx next dev -p 3100",
+    command: "node scripts/reset-test-db.mjs E2E_DATABASE_URL && npx tsx prisma/seed.ts && npx next dev -p 3100",
     url: "http://127.0.0.1:3100",
     reuseExistingServer: false,
     timeout: 180_000,
     env: {
       DATABASE_URL: e2eUrl,
       DIRECT_URL: e2eUrl,
+      E2E_DATABASE_URL: e2eUrl,
       APP_URL: "http://127.0.0.1:3100",
     },
   },
