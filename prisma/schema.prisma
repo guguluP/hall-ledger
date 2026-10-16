@@ -1,5 +1,7 @@
 generator client {
-  provider = "prisma-client-js"
+  provider      = "prisma-client-js"
+  // Netlify functions run on Amazon Linux (OpenSSL 3); builds run on Ubuntu.
+  binaryTargets = ["native", "rhel-openssl-3.0.x"]
 }
 
 // PostgreSQL (Supabase). DATABASE_URL is the pooled connection (port 6543,
