@@ -19,6 +19,7 @@ export default async function SectionPage({ params }: { params: Promise<{ slug: 
   if (!slots.length) notFound();
   return (
     <AppShell title={section} subtitle={inst.name} slug={slug} institutionName={inst.name} user={shell.user} institutions={shell.institutions}>
+      <p className="mb-4 text-[14px]"><a className="text-accent" href={`/api/i/${inst.slug}/calendar?section=${encodeURIComponent(section)}`}>Add to calendar</a></p>
       <ul className="space-y-2">
         {slots
           .slice()

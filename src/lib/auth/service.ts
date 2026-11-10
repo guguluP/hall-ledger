@@ -180,11 +180,11 @@ export async function createInstitution(userId: string, input: unknown) {
   if (!user) throw new HttpError(401, "Sign in required");
   if (!user.emailVerifiedAt) throw new HttpError(403, "Verify your email before creating an institution.");
   await assertIpLimit(`school:${userId}`, 5, HOUR);
-  await recordAttempt(`school:${userId}`);
   const parsed = InstitutionInput.safeParse(input);
   if (!parsed.success) throw new HttpError(400, "Check the form", zodFields(parsed.error));
   const taken = await prisma.institution.findUnique({ where: { slug: parsed.data.slug } });
-  if (taken) throw new HttpError(400, "That address is already in use", { slug: "Choose another address" });
+  const alias = await prisma.slugAlias.findUnique({ where: { slug: parsed.data.slug } });
+  if (taken || alias) throw new HttpError(400, "That address is already in use", { slug: "Choose another address" });
   const inst = await prisma.institution.create({
     data: {
       name: parsed.data.name,
@@ -193,6 +193,7 @@ export async function createInstitution(userId: string, input: unknown) {
       timetables: { create: { name: "Main" } },
     },
   });
+  await recordAttempt(`school:${userId}`);
   await audit("institution-create", { userId, institutionId: inst.id, details: inst.slug });
   return inst;
 }
@@ -203,16 +204,39 @@ export async function updateInstitution(opts: {
   name: string;
   slug: string;
   isPublic: boolean;
+  dayStartMin: number;
+  dayEndMin: number;
+  sundayOpen: boolean;
 }) {
   const parsed = InstitutionInput.safeParse({ name: opts.name, slug: opts.slug });
   if (!parsed.success) throw new HttpError(400, "Check the form", zodFields(parsed.error));
+  if (opts.dayEndMin <= opts.dayStartMin) throw new HttpError(400, "Closing time must be after opening time.");
+  const current = await prisma.institution.findUnique({ where: { id: opts.institutionId } });
+  if (!current) throw new HttpError(404, "Not found");
   const clash = await prisma.institution.findFirst({
     where: { slug: parsed.data.slug, NOT: { id: opts.institutionId } },
   });
-  if (clash) throw new HttpError(400, "That address is already in use");
-  const inst = await prisma.institution.update({
-    where: { id: opts.institutionId },
-    data: { name: parsed.data.name, slug: parsed.data.slug, isPublic: opts.isPublic },
+  const alias = await prisma.slugAlias.findUnique({ where: { slug: parsed.data.slug } });
+  if (clash || (alias && alias.institutionId !== opts.institutionId)) {
+    throw new HttpError(400, "That address is already in use");
+  }
+  const inst = await prisma.$transaction(async (tx) => {
+    if (parsed.data.slug !== current.slug) {
+      if (alias) await tx.slugAlias.delete({ where: { slug: parsed.data.slug } });
+      await tx.slugAlias.deleteMany({ where: { slug: current.slug } });
+      await tx.slugAlias.create({ data: { slug: current.slug, institutionId: opts.institutionId } });
+    }
+    return tx.institution.update({
+      where: { id: opts.institutionId },
+      data: {
+        name: parsed.data.name,
+        slug: parsed.data.slug,
+        isPublic: opts.isPublic,
+        dayStartMin: opts.dayStartMin,
+        dayEndMin: opts.dayEndMin,
+        sundayOpen: opts.sundayOpen,
+      },
+    });
   });
   await audit("settings", { userId: opts.userId, institutionId: inst.id, details: inst.slug });
   return inst;
@@ -337,17 +361,19 @@ export async function listSessions(userId: string) {
   });
 }
 
+export function matchSchools<T extends { name: string; slug: string }>(rows: T[], query: string) {
+  const needle = query.trim().toLowerCase().slice(0, 80);
+  const matched = needle
+    ? rows.filter((row) => row.name.toLowerCase().includes(needle) || row.slug.toLowerCase().includes(needle))
+    : rows;
+  return matched.slice(0, 24);
+}
+
 export async function searchInstitutions(query: string) {
-  const q = query.trim().slice(0, 80);
-  return prisma.institution.findMany({
-    where: {
-      isPublic: true,
-      ...(q
-        ? { OR: [{ name: { contains: q } }, { slug: { contains: q.toLowerCase() } }] }
-        : {}),
-    },
+  const rows = await prisma.institution.findMany({
+    where: { isPublic: true },
     select: { slug: true, name: true },
     orderBy: { name: "asc" },
-    take: 24,
   });
+  return matchSchools(rows, query);
 }

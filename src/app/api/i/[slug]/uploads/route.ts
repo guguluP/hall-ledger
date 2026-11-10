@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { apiError, assertFileSize, assertMultipart, assertUploadLength } from "@/lib/api-error";
 import { requireRole } from "@/lib/auth/authz";
 import { assertMutation } from "@/lib/auth/csrf";
+import { xlsxToCsv } from "@/lib/parse/xlsx";
 import { createDraft } from "@/lib/timetable-repo";
 
 export const dynamic = "force-dynamic";
@@ -20,11 +21,12 @@ export async function POST(req: Request, ctx: { params: Promise<{ slug: string }
       return NextResponse.json({ error: "No file uploaded" }, { status: 400 });
     }
     const name = file.name || "timetable.csv";
-    if (!/\.(csv|tsv)$/i.test(name)) {
-      return NextResponse.json({ error: "Upload a .csv or .tsv file. In Excel use Save As → CSV UTF-8." }, { status: 400 });
+    if (!/\.(csv|tsv|xlsx)$/i.test(name)) {
+      return NextResponse.json({ error: "Upload a .csv, .tsv, or .xlsx file." }, { status: 400 });
     }
     assertFileSize(file.size);
-    const bytes = new Uint8Array(await file.arrayBuffer());
+    let bytes = new Uint8Array(await file.arrayBuffer());
+    if (/\.xlsx$/i.test(name)) bytes = new TextEncoder().encode(xlsxToCsv(bytes));
     const draft = await createDraft({
       institutionId: inst.id,
       userId: user.id,

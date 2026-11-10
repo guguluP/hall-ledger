@@ -1,4 +1,4 @@
-import { buildingOf, isLabRoom, roomsEqual } from "./rooms";
+import { roomsEqual } from "./rooms";
 import {
   fromMinutes,
   labelTime,
@@ -155,10 +155,15 @@ export type FreeRoom = {
   id: string;
   name: string;
   building: string;
-  capacity: number;
+  capacity: number | null;
   isLab: boolean;
+  floor: number | null;
+  hasProjector: boolean;
+  hasSmartBoard: boolean;
+  hasAc: boolean;
   freeFrom: string;
   freeUntil: string;
+  freeUntilMin: number;
   nextBooking: string | null;
   fullyFree?: boolean;
   gaps?: FreeGap[];
@@ -191,8 +196,19 @@ function nextBookingLabel(
   return `${labelTime(next.start)} – ${who}`;
 }
 
+export type CatalogRoom = {
+  name: string;
+  building?: string | null;
+  capacity?: number | null;
+  isLab?: boolean;
+  floor?: number | null;
+  hasProjector?: boolean;
+  hasSmartBoard?: boolean;
+  hasAc?: boolean;
+};
+
 export function findAvailability(
-  rooms: { name: string; building?: string | null; capacity?: number; isLab?: boolean }[],
+  rooms: CatalogRoom[],
   slots: OccupancySlot[],
   day: number,
   start: string,
@@ -209,7 +225,7 @@ export function findAvailability(
   if (!win) return { free, partial };
 
   for (const room of rooms) {
-    const lab = room.isLab ?? isLabRoom(room.name);
+    const lab = room.isLab === true;
     if (labsOnly && !lab) continue;
     const occ = occupiedForRoom(slots, room.name, day);
     const merged = mergeIntervals(occ);
@@ -225,9 +241,13 @@ export function findAvailability(
     const base = {
       id: room.name,
       name: room.name,
-      building: room.building || buildingOf(room.name),
-      capacity: room.capacity || 60,
+      building: room.building?.trim() || "",
+      capacity: typeof room.capacity === "number" ? room.capacity : null,
       isLab: lab,
+      floor: typeof room.floor === "number" ? room.floor : null,
+      hasProjector: room.hasProjector === true,
+      hasSmartBoard: room.hasSmartBoard === true,
+      hasAc: room.hasAc === true,
       gaps: gapLabels,
     };
 
@@ -237,6 +257,7 @@ export function findAvailability(
         fullyFree: true,
         freeFrom: labelTime(Math.max(covering.start, win.startMin)),
         freeUntil: labelTime(covering.end),
+        freeUntilMin: covering.end,
         nextBooking: nextBookingLabel(occ, win.endMin),
       });
     } else if (gapLabels.length) {
@@ -246,6 +267,7 @@ export function findAvailability(
         fullyFree: false,
         freeFrom: first ? labelTime(first.start) : labelTime(win.startMin),
         freeUntil: first ? labelTime(first.end) : labelTime(win.endMin),
+        freeUntilMin: first ? first.end : win.endMin,
         nextBooking: nextBookingLabel(occ, win.startMin),
       });
     }
@@ -255,7 +277,7 @@ export function findAvailability(
 }
 
 export function findFreeRooms(
-  rooms: { name: string; building?: string | null; capacity?: number }[],
+  rooms: CatalogRoom[],
   slots: OccupancySlot[],
   day: number,
   start: string,

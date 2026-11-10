@@ -8,7 +8,7 @@ import { requireRoleForUser, visibleInstitution } from "@/lib/auth/authz";
 import { userFromSessionToken } from "@/lib/auth/session";
 import { consumeToken } from "@/lib/auth/tokens";
 import { createDraft, loadPublishedView, publishVersionFor } from "@/lib/timetable-repo";
-import { acceptInvite, inviteMember, removeMember, setMemberRole } from "@/lib/auth/service";
+import { acceptInvite, createInstitution, inviteMember, removeMember, setMemberRole } from "@/lib/auth/service";
 import { findAvailability } from "@/lib/occupancy";
 import { DEV_MAIL_LOG } from "@/lib/mail";
 
@@ -185,5 +185,32 @@ describe("auth and tenancy", () => {
     expect(view.slots[0]?.classroomName).toBe("316");
     const availability = findAvailability(view.rooms, view.slots, 1, "09:30", "10:30");
     expect(availability.free.some((room) => room.name === "316")).toBe(false);
+  });
+
+  it("does not count a failed school, reuses a draft, and hides a deleted room", async () => {
+    const owner = await verifiedUser("rio@school.test");
+    await expect(createInstitution(owner.id, { name: "Nope", slug: "no" })).rejects.toBeInstanceOf(HttpError);
+    expect(await prisma.loginAttempt.count({ where: { key: `school:${owner.id}` } })).toBe(0);
+
+    const school = await prisma.institution.create({ data: { slug: "west", name: "West", isPublic: true } });
+    await prisma.membership.create({ data: { institutionId: school.id, userId: owner.id, role: "OWNER" } });
+    await prisma.room.create({ data: { institutionId: school.id, name: "LH1", capacity: 40, isLab: false } });
+    const csv = new TextEncoder().encode("Section,Day,Start,End,Subject,Room\nSECTION-A,Monday,09:30,10:30,Physics,LH 1\n");
+    const first = await createDraft({ institutionId: school.id, userId: owner.id, fileName: "a.csv", bytes: csv });
+    const second = await createDraft({ institutionId: school.id, userId: owner.id, fileName: "a.csv", bytes: csv });
+    expect(second.versionId).toBe(first.versionId);
+    expect(second.duplicate).toBe(true);
+    await publishVersionFor({
+      institutionId: school.id,
+      userId: owner.id,
+      versionId: first.versionId,
+      emailVerifiedAt: owner.emailVerifiedAt,
+    });
+    const room = await prisma.room.findFirstOrThrow({ where: { institutionId: school.id, name: "LH1" } });
+    await prisma.retiredRoom.create({ data: { institutionId: school.id, roomKey: "LH1", name: room.name } });
+    await prisma.room.delete({ where: { id: room.id } });
+    const view = await loadPublishedView(school.id);
+    expect(view.rooms.some((item) => item.name.replace(/\s+/g, "").toUpperCase() === "LH1")).toBe(false);
+    expect(view.slots[0]?.classroomName).toBe("");
   });
 });

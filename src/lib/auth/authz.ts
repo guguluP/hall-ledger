@@ -15,8 +15,16 @@ export async function membershipFor(userId: string, institutionId: string) {
   });
 }
 
+export async function institutionBySlug(slug: string) {
+  if (!/^[a-z0-9-]{3,40}$/.test(slug) || RESERVED_SLUGS.has(slug)) return null;
+  const direct = await prisma.institution.findUnique({ where: { slug } });
+  if (direct) return direct;
+  const alias = await prisma.slugAlias.findUnique({ where: { slug }, include: { institution: true } });
+  return alias?.institution ?? null;
+}
+
 export async function requireRoleForUser(userId: string, slug: string, min: Role) {
-  const inst = await prisma.institution.findUnique({ where: { slug } });
+  const inst = await institutionBySlug(slug);
   if (!inst) throw new HttpError(404, "Not found");
   const membership = await membershipFor(userId, inst.id);
   if (!membership || !isRole(membership.role) || RANK[membership.role] < RANK[min]) {
@@ -32,8 +40,7 @@ export async function requireRole(slug: string, min: Role) {
 }
 
 export async function visibleInstitution(slug: string) {
-  if (!/^[a-z0-9-]{3,40}$/.test(slug) || RESERVED_SLUGS.has(slug)) return null;
-  const inst = await prisma.institution.findUnique({ where: { slug } });
+  const inst = await institutionBySlug(slug);
   if (!inst) return null;
   if (inst.isPublic) return inst;
   const user = await getCurrentUser().catch(() => null);

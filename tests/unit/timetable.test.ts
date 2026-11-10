@@ -58,4 +58,32 @@ describe("timetable parser", () => {
     expect(parsed.slots[0].room).toBe("101");
     expect(parsed.warnings.join(" ")).toMatch(/Unknown room "101"/);
   });
+
+  it("does not read a room out of an ordinary word, and does not keep the previous section's room", () => {
+    const text = [
+      "Days,Sections/Room,9.30AM-10.30AM,10.30AM-11.30AM,11.30AM-12.30PM,12.30PM-1.30PM",
+      "Monday,SECTION-A Room No:- 316,MACHINE LEARNING,Circuits-PP-R.No-404,,",
+      "Tuesday,SECTION-B,PHYSICS,,,",
+    ].join("\n");
+    const parsed = parseTimetableCsv(text, { knownRooms: ["316", "404"] });
+    const learning = parsed.slots.find((slot) => slot.subject?.includes("MACHINE LEARNING"));
+    const circuits = parsed.slots.find((slot) => slot.subject?.includes("Circuits"));
+    const physics = parsed.slots.find((slot) => slot.subject?.includes("PHYSICS"));
+    expect(learning?.room).toBe("316");
+    expect(circuits?.room).toBe("404");
+    expect(physics?.room).toBeNull();
+    expect(parsed.slots.some((slot) => slot.room === "ING")).toBe(false);
+  });
+
+  it("keeps a 6:00–7:00 class and expands Mon/Wed", () => {
+    const parsed = parseTimetableCsv(
+      "Section,Day,Start,End,Subject,Room,Teacher\nSECTION-A,Mon/Wed,6:00,7:00,Circuits,LH 1,Ada\nSECTION-B,Monday,18:00,19:00,Algebra,LH1,Ada\n",
+      { knownRooms: ["LH1"] },
+    );
+    expect(parsed.slots.filter((slot) => slot.section === "SECTION-A")).toHaveLength(2);
+    expect(parsed.slots.every((slot) => slot.startMin === 18 * 60)).toBe(true);
+    expect(parsed.warnings.join(" ")).toMatch(/Monday and Wednesday/);
+    expect(parsed.hardConflicts).toHaveLength(1);
+    expect(parsed.clashes.some((clash) => clash.type === "TEACHER_OVERLAP")).toBe(true);
+  });
 });

@@ -1,10 +1,12 @@
 import { CsvError, parseCsv } from "@/lib/parse/csv";
-import { parseTimeToMinutes } from "@/lib/time";
+import { roomKey } from "@/lib/rooms";
+import { labelTime, parseClassRange } from "@/lib/time";
 
 export type SlotIn = {
   section: string;
   subject: string | null;
   room: string | null;
+  teacher: string | null;
   type: string;
   dayOfWeek: number;
   startMin: number;
@@ -12,18 +14,20 @@ export type SlotIn = {
 };
 
 export type HardConflict = {
-  type: "ROOM_OVERLAP";
+  type: "ROOM_OVERLAP" | "SECTION_OVERLAP" | "TEACHER_OVERLAP";
   day: string;
   time: string;
   room: string;
   sections: string[];
   subjects: string[];
+  teacher?: string;
 };
 
 export type TimetableParse = {
   slots: SlotIn[];
   warnings: string[];
   hardConflicts: HardConflict[];
+  clashes: HardConflict[];
 };
 
 const DAY_NAMES = ["Sunday", "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday"];
@@ -73,6 +77,10 @@ const HEADER_ALIAS: Record<string, string> = {
   venue: "room",
   type: "type",
   kind: "type",
+  teacher: "teacher",
+  faculty: "teacher",
+  instructor: "teacher",
+  staff: "teacher",
 };
 
 function keyOf(value: string) {
@@ -92,41 +100,41 @@ export function detectType(raw: string): string {
   return "CLASS";
 }
 
-function dayFrom(value: string): number | null {
-  const text = value.trim().toLowerCase();
+function oneDay(value: string): number | null {
+  const text = value.trim().toLowerCase().replace(/\./g, "");
   if (!text) return null;
   if (/^[0-6]$/.test(text)) return Number(text);
-  const hit = Object.keys(DAY_MAP).find((day) => text === day || text.startsWith(day));
-  return hit ? DAY_MAP[hit] : null;
+  return Object.prototype.hasOwnProperty.call(DAY_MAP, text) ? DAY_MAP[text] : null;
 }
 
-function clock(value: string, afternoon: boolean) {
-  return parseTimeToMinutes(value, { assumeAfternoon: afternoon });
+const DAY_LABELS = ["Sunday", "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday"];
+
+export function daysFrom(value: string): { days: number[]; warning?: string } {
+  const text = value.trim();
+  if (!text) return { days: [] };
+  const parts = text.split(/\s*(?:\/|&|,|\+|\band\b)\s*/i).filter(Boolean);
+  if (parts.length > 1) {
+    const days: number[] = [];
+    const bad: string[] = [];
+    for (const part of parts) {
+      const day = oneDay(part);
+      if (day == null) bad.push(part);
+      else if (!days.includes(day)) days.push(day);
+    }
+    const listed = days.map((day) => DAY_LABELS[day]).join(" and ");
+    if (!days.length) return { days: [], warning: `Unrecognized day "${text}".` };
+    if (bad.length) {
+      return { days, warning: `"${text}" was read as ${listed}. Unrecognized: ${bad.join(", ")}.` };
+    }
+    return { days, warning: `"${text}" was read as ${listed}.` };
+  }
+  const day = oneDay(text);
+  if (day == null) return { days: [], warning: `Unrecognized day "${text}".` };
+  return { days: [day] };
 }
 
-function rangeFrom(cell: string): { startMin: number; endMin: number } | null {
-  const match = cell
-    .replace(/\s+/g, " ")
-    .trim()
-    .match(/(\d{1,2})[.:](\d{2})\s*(AM|PM)?\s*[-–to]+\s*(\d{1,2})[.:](\d{2})\s*(AM|PM)?/i);
-  if (!match) return null;
-  let startHour = parseInt(match[1], 10);
-  let endHour = parseInt(match[4], 10);
-  const startMin = parseInt(match[2], 10);
-  const endMin = parseInt(match[5], 10);
-  const startMeridian = (match[3] || "").toUpperCase();
-  const endMeridian = (match[6] || "").toUpperCase();
-  if (startMeridian === "PM" && startHour < 12) startHour += 12;
-  if (startMeridian === "AM" && startHour === 12) startHour = 0;
-  if (endMeridian === "PM" && endHour < 12) endHour += 12;
-  if (endMeridian === "AM" && endHour === 12) endHour = 0;
-  if (!startMeridian && !endMeridian && startHour <= 5) startHour += 12;
-  if (!startMeridian && !endMeridian && endHour <= 5) endHour += 12;
-  if (startHour > 23 || endHour > 23) return null;
-  const start = startHour * 60 + startMin;
-  const end = endHour * 60 + endMin;
-  if (end <= start) return null;
-  return { startMin: start, endMin: end };
+function rangeFrom(cell: string) {
+  return parseClassRange(cell);
 }
 
 function sectionFrom(raw: string, fallback: string) {
@@ -159,7 +167,7 @@ function explicitRoom(src: string): string | null {
   }
   const roomNo = src.match(/Room\s*No\.?\s*[:-]*\s*(\d{1,4})\b/i);
   if (roomNo) return String(parseInt(roomNo[1], 10));
-  const rn = src.match(/R\.?\s*N(?:o)?\.?\s*[:-]*\s*([A-Za-z0-9-]{1,8})/i);
+  const rn = src.match(/\bR\.?\s*N(?:o)?\.?\s*[:-]*\s*([A-Za-z0-9-]{1,8})/i);
   if (rn) return rn[1].replace(/\s+/g, "").toUpperCase();
   const lab = src.match(/\bLab[-\s]+(?:PR[-\s]+)?(\d{2,4})\b/i);
   if (lab) return lab[1];
@@ -172,7 +180,7 @@ function cleanSubject(raw: string) {
   return raw
     .replace(/\s*-\s*(PP|PR|TUT|LAB)\b/gi, "")
     .replace(/\b(PP|PR|TUT)\b/gi, "")
-    .replace(/R\.?\s*N(?:o)?\.?\s*[:-]*\s*[A-Za-z0-9-]{1,8}/gi, "")
+    .replace(/\bR\.?\s*N(?:o)?\.?\s*[:-]*\s*[A-Za-z0-9-]{1,8}/gi, "")
     .replace(/Room\s*No\.?\s*[:-]*\s*\d{1,4}/gi, "")
     .replace(/\s{2,}/g, " ")
     .trim()
@@ -183,8 +191,7 @@ const SKIP = /^(lunch|csr(\s+activity)?|mentoring|hod\s+interaction|dean\s+inter
 
 function matchKnown(raw: string | null, knownRooms: string[]): { room: string | null; warning?: string } {
   if (!raw) return { room: null };
-  const norm = (value: string) => value.trim().toUpperCase().replace(/\s+/g, "");
-  const hit = knownRooms.find((room) => norm(room) === norm(raw));
+  const hit = knownRooms.find((room) => roomKey(room) === roomKey(raw));
   if (hit) return { room: hit };
   if (!/^[A-Za-z0-9 -]+$/.test(raw) || raw.length > 20) {
     return { room: null, warning: `Ignored room "${raw.slice(0, 40)}" because it is not a room name.` };
@@ -209,13 +216,15 @@ function parseTabular(rows: string[][], map: Record<string, number>, knownRooms:
   for (let i = 1; i < rows.length; i++) {
     const row = rows[i];
     if (!row.some((cell) => cell.trim())) continue;
-    const day = dayFrom(row[map.day] || "");
-    if (day == null) {
-      warnings.push(`Row ${i + 1} has an unrecognized day.`);
+    const parsedDays = daysFrom(row[map.day] || "");
+    if (!parsedDays.days.length) {
+      warnings.push(parsedDays.warning || `Row ${i + 1} has an unrecognized day.`);
       continue;
     }
+    if (parsedDays.warning) warnings.push(`Row ${i + 1}: ${parsedDays.warning}`);
     let startMin = -1;
     let endMin = -1;
+    let assumedPm = false;
     if (map.time != null) {
       const range = rangeFrom(row[map.time] || "");
       if (!range) {
@@ -224,13 +233,19 @@ function parseTabular(rows: string[][], map: Record<string, number>, knownRooms:
       }
       startMin = range.startMin;
       endMin = range.endMin;
+      assumedPm = range.assumedPm;
     } else {
-      startMin = clock(row[map.start] || "", true);
-      endMin = clock(row[map.end] || "", true);
-      if (startMin < 0 || endMin < 0 || endMin <= startMin) {
+      const range = rangeFrom(`${row[map.start] || ""}-${row[map.end] || ""}`);
+      if (!range) {
         warnings.push(`Row ${i + 1}: end must be after start.`);
         continue;
       }
+      startMin = range.startMin;
+      endMin = range.endMin;
+      assumedPm = range.assumedPm;
+    }
+    if (assumedPm) {
+      warnings.push(`Row ${i + 1}: ${labelTime(startMin)}–${labelTime(endMin)} was read as an afternoon class.`);
     }
     const section = sectionFrom(map.section != null ? row[map.section] || "" : "", fallback);
     const kept = keepSection(section, warnings, `Row ${i + 1}`);
@@ -244,15 +259,19 @@ function parseTabular(rows: string[][], map: Record<string, number>, knownRooms:
     const matched = matchKnown(roomRaw || null, knownRooms);
     if (matched.warning) warnings.push(`Row ${i + 1}: ${matched.warning}`);
     const typeRaw = map.type != null ? (row[map.type] || "").trim() : detectType(subjectRaw);
-    slots.push({
-      section: kept,
-      subject: subjectRaw ? cleanSubject(subjectRaw) || subjectRaw.slice(0, 120) : null,
-      room: matched.room,
-      type: (typeRaw || "CLASS").slice(0, 20),
-      dayOfWeek: day,
-      startMin,
-      endMin,
-    });
+    const teacherRaw = map.teacher != null ? (row[map.teacher] || "").trim().slice(0, 80) : "";
+    for (const day of parsedDays.days) {
+      slots.push({
+        section: kept,
+        subject: subjectRaw ? cleanSubject(subjectRaw) || subjectRaw.slice(0, 120) : null,
+        room: matched.room,
+        teacher: teacherRaw || null,
+        type: (typeRaw || "CLASS").slice(0, 20),
+        dayOfWeek: day,
+        startMin,
+        endMin,
+      });
+    }
   }
   return finish(slots, warnings);
 }
@@ -282,39 +301,45 @@ function parseGrid(rows: string[][], knownRooms: string[], fileName?: string): T
   for (let i = headerIdx + 1; i < rows.length; i++) {
     const row = rows[i].map((cell) => cell.trim());
     if (!row.some(Boolean)) continue;
-    const day = dayFrom(row[0] || "");
-    if (day == null) {
+    const parsedDays = daysFrom(row[0] || "");
+    if (!parsedDays.days.length) {
       const label = row.find((cell) => /SECTION/i.test(cell)) || "";
       if (label) {
         sectionName = sectionFrom(label, sectionName);
-        defaultRoom = explicitRoom(label) || defaultRoom;
+        defaultRoom = explicitRoom(label);
+      } else if (parsedDays.warning) {
+        warnings.push(parsedDays.warning);
       }
       continue;
     }
+    if (parsedDays.warning) warnings.push(parsedDays.warning);
     const labelCol = row[1] || "";
     if (/SECTION/i.test(labelCol)) {
       sectionName = sectionFrom(labelCol, sectionName);
-      defaultRoom = explicitRoom(labelCol) || defaultRoom;
+      defaultRoom = explicitRoom(labelCol);
     }
-    for (const col of timeCols) {
-      const raw = (row[col.col] || "").trim();
-      if (!raw || SKIP.test(raw)) continue;
-      const type = detectType(raw);
-      if (type === "LUNCH" || type === "CSR") continue;
-      const roomRaw = explicitRoom(raw) || defaultRoom;
-      const matched = matchKnown(roomRaw, knownRooms);
-      const kept = keepSection(sectionName, warnings, `${DAY_NAMES[day]}`);
-      if (!kept) continue;
-      if (matched.warning) warnings.push(`${kept} ${DAY_NAMES[day]}: ${matched.warning}`);
-      slots.push({
-        section: kept,
-        subject: cleanSubject(raw) || raw.slice(0, 120),
-        room: matched.room,
-        type: type.slice(0, 20),
-        dayOfWeek: day,
-        startMin: col.startMin,
-        endMin: col.endMin,
-      });
+    for (const day of parsedDays.days) {
+      for (const col of timeCols) {
+        const raw = (row[col.col] || "").trim();
+        if (!raw || SKIP.test(raw)) continue;
+        const type = detectType(raw);
+        if (type === "LUNCH" || type === "CSR") continue;
+        const roomRaw = explicitRoom(raw) || defaultRoom;
+        const matched = matchKnown(roomRaw, knownRooms);
+        const kept = keepSection(sectionName, warnings, `${DAY_NAMES[day]}`);
+        if (!kept) continue;
+        if (matched.warning) warnings.push(`${kept} ${DAY_NAMES[day]}: ${matched.warning}`);
+        slots.push({
+          section: kept,
+          subject: cleanSubject(raw) || raw.slice(0, 120),
+          room: matched.room,
+          teacher: null,
+          type: type.slice(0, 20),
+          dayOfWeek: day,
+          startMin: col.startMin,
+          endMin: col.endMin,
+        });
+      }
     }
   }
   return finish(slots, warnings);
@@ -322,7 +347,12 @@ function parseGrid(rows: string[][], knownRooms: string[], fileName?: string): T
 
 function finish(slots: SlotIn[], warnings: string[]): TimetableParse {
   const uniqueWarnings = [...new Set(warnings)].slice(0, 100);
-  return { slots, warnings: uniqueWarnings, hardConflicts: detectHardConflicts(slots) };
+  return {
+    slots,
+    warnings: uniqueWarnings,
+    hardConflicts: detectHardConflicts(slots),
+    clashes: detectClashes(slots),
+  };
 }
 
 export function labelMinutes(total: number) {
@@ -342,9 +372,10 @@ export function detectHardConflicts(slots: SlotIn[]): HardConflict[] {
       const b = active[j];
       if (a.dayOfWeek !== b.dayOfWeek) continue;
       if (a.section === b.section) continue;
-      if ((a.room || "").toUpperCase() !== (b.room || "").toUpperCase()) continue;
+      const keyRoom = roomKey(a.room);
+      if (!keyRoom || keyRoom !== roomKey(b.room)) continue;
       if (!(a.startMin < b.endMin && b.startMin < a.endMin)) continue;
-      const key = [a.room, a.dayOfWeek, ...[a.section, b.section].sort(), a.startMin, b.startMin].join("|");
+      const key = [keyRoom, a.dayOfWeek, ...[a.section, b.section].sort(), a.startMin, b.startMin].join("|");
       if (seen.has(key)) continue;
       seen.add(key);
       conflicts.push({
@@ -355,6 +386,51 @@ export function detectHardConflicts(slots: SlotIn[]): HardConflict[] {
         sections: [...new Set([a.section, b.section])],
         subjects: [`${a.section}: ${a.subject || ""}`, `${b.section}: ${b.subject || ""}`],
       });
+    }
+  }
+  return conflicts;
+}
+
+export function detectClashes(slots: SlotIn[]): HardConflict[] {
+  const conflicts: HardConflict[] = [];
+  const seen = new Set<string>();
+  for (let i = 0; i < slots.length; i++) {
+    for (let j = i + 1; j < slots.length; j++) {
+      const a = slots[i];
+      const b = slots[j];
+      if (a.dayOfWeek !== b.dayOfWeek) continue;
+      if (!(a.startMin < b.endMin && b.startMin < a.endMin)) continue;
+      if (a.section === b.section && roomKey(a.room) !== roomKey(b.room)) {
+        const key = ["S", a.section, a.dayOfWeek, a.startMin, b.startMin, roomKey(a.room), roomKey(b.room)].join("|");
+        if (!seen.has(key)) {
+          seen.add(key);
+          conflicts.push({
+            type: "SECTION_OVERLAP",
+            day: DAY_NAMES[a.dayOfWeek] || String(a.dayOfWeek),
+            time: `${labelMinutes(a.startMin)}–${labelMinutes(a.endMin)}`,
+            room: [a.room, b.room].filter(Boolean).join(" / "),
+            sections: [a.section],
+            subjects: [`${a.room || "no room"}: ${a.subject || ""}`, `${b.room || "no room"}: ${b.subject || ""}`],
+          });
+        }
+      }
+      const teacherA = (a.teacher || "").trim();
+      const teacherB = (b.teacher || "").trim();
+      if (teacherA && teacherB && teacherA.toLowerCase() === teacherB.toLowerCase() && a.section !== b.section) {
+        const key = ["T", teacherA.toLowerCase(), a.dayOfWeek, a.startMin, b.startMin, a.section, b.section].join("|");
+        if (!seen.has(key)) {
+          seen.add(key);
+          conflicts.push({
+            type: "TEACHER_OVERLAP",
+            day: DAY_NAMES[a.dayOfWeek] || String(a.dayOfWeek),
+            time: `${labelMinutes(a.startMin)}–${labelMinutes(a.endMin)}`,
+            room: [a.room, b.room].filter(Boolean).join(" / "),
+            sections: [...new Set([a.section, b.section])],
+            subjects: [`${a.section}: ${a.subject || ""}`, `${b.section}: ${b.subject || ""}`],
+            teacher: teacherA,
+          });
+        }
+      }
     }
   }
   return conflicts;

@@ -34,26 +34,23 @@ export const HALL_COUNT = FULL_TIMETABLE_ROOMS.length;
 export type TimetableRoomName = (typeof FULL_TIMETABLE_ROOMS)[number];
 export type Campus = "Aryabhatta" | "Kautalya";
 
-const LAB_ROOMS = new Set([
-  "105",
-  "107",
-  "207",
-  "302",
-  "304",
-  "322",
-  "402",
-  "ME-LAB",
-]);
-
 export function inferCampus(sheetName: string, extra = ""): Campus {
   return /kautalya/i.test(sheetName + " " + extra) ? "Kautalya" : "Aryabhatta";
 }
 
-export function isLabRoom(name: string | null | undefined): boolean {
+/** LAB as its own token. "Collab-1" is not a lab. Demo room numbers are not labs. */
+export function isLabToken(name: string | null | undefined): boolean {
   if (!name) return false;
-  const t = name.trim().toUpperCase().replace(/\s+/g, "");
-  if (LAB_ROOMS.has(t)) return true;
-  return /LAB/.test(t);
+  const text = name.trim().toUpperCase();
+  return /(?:^|[^A-Z])LABS?(?:[^A-Z]|$)/.test(text);
+}
+
+export function isLabRoom(name: string | null | undefined): boolean {
+  return isLabToken(name);
+}
+
+export function roomKey(name: string | null | undefined): string {
+  return String(name ?? "").trim().toUpperCase().replace(/\s+/g, "");
 }
 
 export function isValidRoom(r: string | null | undefined): r is string {
@@ -115,9 +112,9 @@ export function roomsEqual(
   a: string | null | undefined,
   b: string | null | undefined,
 ): boolean {
-  if (!a || !b) return false;
-  const norm = (value: string) => value.trim().toUpperCase().replace(/\s+/g, "");
-  return norm(a) === norm(b);
+  const left = roomKey(a);
+  const right = roomKey(b);
+  return Boolean(left) && left === right;
 }
 
 export type DemoRoomRules = {
@@ -142,6 +139,7 @@ export function applyDemoRoomRules(raw: string, rules: DemoRoomRules): string {
   return raw.trim();
 }
 
+/** Demo campus only. Other schools keep the building stored on the room. */
 export function buildingOf(name: string): string {
   return /^ME/i.test(name) ? "Kautalya" : "Aryabhatta";
 }

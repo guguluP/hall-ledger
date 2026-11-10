@@ -3,6 +3,7 @@ import { AppShell } from "@/components/app-shell";
 import { TimetableGrid } from "@/components/timetable-grid";
 import { membershipFor, visibleInstitution } from "@/lib/auth/authz";
 import { isRole, RANK } from "@/lib/auth/roles";
+import { istNow } from "@/lib/schedule";
 import { shellData } from "@/lib/shell";
 
 export const dynamic = "force-dynamic";
@@ -16,7 +17,7 @@ export default async function TimetablePage({ params }: { params: Promise<{ slug
   const canUpload = Boolean(member && isRole(member.role) && RANK[member.role] >= RANK.EDITOR);
   return (
     <AppShell title="Timetable" subtitle={inst.name} slug={slug} institutionName={inst.name} user={shell.user} institutions={shell.institutions}>
-      <TimetableGrid slug={slug} canUpload={canUpload} />
+      <TimetableGrid slug={slug} canUpload={canUpload} today={istNow().day} sundayOpen={inst.sundayOpen} />
     </AppShell>
   );
 }

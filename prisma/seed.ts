@@ -70,6 +70,7 @@ async function main() {
     section: slot.sectionName || "SECTION",
     subject: slot.subjectName,
     room: slot.classroomName ? applyDemoRoomRules(slot.classroomName, rules) : null,
+    teacher: null,
     type: "CLASS",
     dayOfWeek: slot.dayOfWeek,
     startMin: parseTimeToMinutes(slot.startTime),

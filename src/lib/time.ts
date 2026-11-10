@@ -1,4 +1,9 @@
-/** Time helpers. College day is ~9:30 AM–5:30 PM; afternoon hours 1–6 without AM/PM are PM. */
+/**
+ * Time helpers.
+ * A bare college clock uses one rule everywhere: 8–11 stay morning, 12 is noon,
+ * and 1–7 are afternoon. Explicit AM/PM is kept. Search boxes send 24-hour
+ * values and do not use this guess.
+ */
 
 const PERIOD_MINUTES = 60;
 
@@ -28,8 +33,52 @@ export function parseTimeToMinutes(
   const min = parseInt(hm[2], 10);
   if (h > 24 || min > 59) return -1;
   if (h === 24) return -1;
-  if (opts?.assumeAfternoon && h >= 1 && h <= 6) h += 12;
+  if (opts?.assumeAfternoon && h >= 1 && h <= 7) h += 12;
   return h * 60 + min;
+}
+
+export type ClassRange = { startMin: number; endMin: number; assumedPm: boolean };
+
+function meridianOf(value: string | undefined) {
+  const text = (value || "").toLowerCase().replace(/\./g, "");
+  if (text === "am" || text === "a") return "am";
+  if (text === "pm" || text === "p") return "pm";
+  return "";
+}
+
+function bareHour(hour: number, minute: number, meridian: string, afternoon: boolean) {
+  if (hour > 24 || minute > 59) return -1;
+  let h = hour;
+  if (meridian === "pm" && h < 12) h += 12;
+  if (meridian === "am" && h === 12) h = 0;
+  if (!meridian && afternoon && h >= 1 && h <= 7) h += 12;
+  if (h > 23) return -1;
+  return h * 60 + minute;
+}
+
+/** One range parser for grid headers and Start/End columns. */
+export function parseClassRange(cell: string): ClassRange | null {
+  const match = String(cell ?? "")
+    .replace(/\s+/g, " ")
+    .trim()
+    .match(/(\d{1,2})[.:](\d{2})\s*(A\.?M\.?|P\.?M\.?)?\s*(?:-|–|—|\bto\b)+\s*(\d{1,2})[.:](\d{2})\s*(A\.?M\.?|P\.?M\.?)?/i);
+  if (!match) return null;
+  const startMeridian = meridianOf(match[3]);
+  const endMeridian = meridianOf(match[6]);
+  const afternoon = !startMeridian && !endMeridian;
+  const start = bareHour(parseInt(match[1], 10), parseInt(match[2], 10), startMeridian, afternoon);
+  let end = bareHour(parseInt(match[4], 10), parseInt(match[5], 10), endMeridian, afternoon);
+  if (start < 0 || end < 0) return null;
+  let assumedPm = afternoon && (parseInt(match[1], 10) >= 1 && parseInt(match[1], 10) <= 7 || parseInt(match[4], 10) >= 1 && parseInt(match[4], 10) <= 7);
+  if (end <= start && !endMeridian && end < 12 * 60) {
+    const shifted = end + 12 * 60;
+    if (shifted > start && shifted - start <= 6 * 60) {
+      end = shifted;
+      assumedPm = true;
+    }
+  }
+  if (end <= start) return null;
+  return { startMin: start, endMin: end, assumedPm };
 }
 
 export function toMinutes(time: string): number {
@@ -59,22 +108,17 @@ export function labelTime(time: string | number): string {
   return `${h12}:${String(m).padStart(2, "0")} ${ap}`;
 }
 
-/** Slot times from timetables: 1:00–6:59 with no meridian → PM. */
+/** Slot times from timetables. Uses the same 1–7 afternoon rule as parseClassRange. */
 export function slotMinutes(time: string): number {
   return parseTimeToMinutes(time, { assumeAfternoon: true });
 }
 
 export function slotEndMinutes(startTime: string, endTime: string): number {
+  const range = parseClassRange(`${startTime}-${endTime}`);
+  if (range) return range.endMin;
   const start = slotMinutes(startTime);
   if (start < 0) return -1;
-  let end = parseTimeToMinutes(endTime);
-  if (end < 0) end = parseTimeToMinutes(endTime, { assumeAfternoon: true });
-  if (end < 0 || end <= start) {
-    const pm = parseTimeToMinutes(endTime, { assumeAfternoon: true });
-    if (pm > start) end = pm;
-    else end = start + PERIOD_MINUTES;
-  }
-  return end;
+  return start + PERIOD_MINUTES;
 }
 
 export type TimeWindow = {

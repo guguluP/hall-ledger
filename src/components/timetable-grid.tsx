@@ -10,6 +10,7 @@ import { buildTimeRows, findSlot, type OccupancySlot } from "@/lib/occupancy";
 import { labelTime } from "@/lib/time";
 
 const DAYS = [
+  { value: 0, label: "Sun", full: "Sunday" },
   { value: 1, label: "Mon", full: "Monday" },
   { value: 2, label: "Tue", full: "Tuesday" },
   { value: 3, label: "Wed", full: "Wednesday" },
@@ -20,8 +21,8 @@ const DAYS = [
 
 type Room = { name: string; building?: string | null; capacity?: number };
 
-export function TimetableGrid({ slug, canUpload }: { slug: string; canUpload: boolean }) {
-  const [day, setDay] = useState(1);
+export function TimetableGrid({ slug, canUpload, today, sundayOpen }: { slug: string; canUpload: boolean; today: number; sundayOpen: boolean }) {
+  const [day, setDay] = useState(today);
   const [slots, setSlots] = useState<OccupancySlot[]>([]);
   const [rooms, setRooms] = useState<Room[]>([]);
   const [stats, setStats] = useState({ slots: 0, roomsInUse: 0 });
@@ -72,6 +73,9 @@ export function TimetableGrid({ slug, canUpload }: { slug: string; canUpload: bo
       <div className="mb-6">
         <SlidingTabs items={DAYS.map((item) => ({ value: item.value, label: item.label }))} value={day} onChange={(value) => setDay(Number(value))} />
       </div>
+      {day === 0 && !sundayOpen && !daySlots.length && (
+        <p className="mb-4 rounded-2xl border border-border bg-surface px-4 py-3 text-[14px] text-muted">Sunday is a closed day, so rooms are not free to use.</p>
+      )}
       <section className="overflow-hidden rounded-2xl border border-border bg-surface">
         <div className="border-b border-border px-5 py-4">
           <h2 className="text-[17px] font-semibold">{dayMeta?.full}</h2>

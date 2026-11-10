@@ -15,10 +15,10 @@ export default async function MembersPage({
   searchParams,
 }: {
   params: Promise<{ slug: string }>;
-  searchParams: Promise<{ sent?: string }>;
+  searchParams: Promise<{ sent?: string; error?: string }>;
 }) {
   const { slug } = await params;
-  const { sent } = await searchParams;
+  const { sent, error } = await searchParams;
   try {
     const { inst } = await requireRole(slug, "ADMIN");
     const [members, shell] = await Promise.all([
@@ -32,6 +32,7 @@ export default async function MembersPage({
     return (
       <AppShell title="Members" subtitle="The last owner cannot be removed or demoted." slug={slug} institutionName={inst.name} user={shell.user} institutions={shell.institutions}>
         {sent && <p className="mb-4 text-[14px] text-ok">Invite sent.</p>}
+        {error && <p className="mb-4 text-[14px] text-danger">{error}</p>}
         <ul className="mb-8 space-y-3">
           {members.map((member) => (
             <li key={member.userId} className="rounded-2xl border border-border bg-surface px-4 py-3">

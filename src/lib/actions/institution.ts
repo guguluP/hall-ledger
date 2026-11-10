@@ -18,14 +18,24 @@ import { decodeUtf8 } from "@/lib/parse/csv";
 import { CsvError } from "@/lib/parse/csv";
 import { bustTimetable, replaceStrengths } from "@/lib/timetable-repo";
 import { RoomInput } from "@/lib/schemas";
+import { roomKey } from "@/lib/rooms";
+import { parseTimeToMinutes } from "@/lib/time";
 import { prisma } from "@/lib/prisma";
 import type { ActionState } from "@/lib/actions/auth";
 import type { Role } from "@/lib/auth/roles";
 
 function fromError(error: unknown): ActionState {
   if (error instanceof HttpError) return { error: error.message, fields: error.fields };
+  if (error && typeof error === "object" && "code" in error && error.code === "P2002") {
+    return { error: "That room name is already on this list." };
+  }
   console.error("[action]", error);
   return { error: "Something went wrong" };
+}
+
+function redirectError(path: string, error: unknown): never {
+  const message = error instanceof HttpError ? error.message : "Something went wrong";
+  redirect(`${path}?error=${encodeURIComponent(message)}`);
 }
 
 export async function createInstitutionAction(_prev: ActionState, formData: FormData): Promise<ActionState> {
@@ -49,12 +59,20 @@ export async function settingsAction(_prev: ActionState, formData: FormData): Pr
   let nextSlug = slug;
   try {
     const { user, inst } = await requireRole(slug, "OWNER");
+    const startRaw = String(formData.get("dayStart") || "");
+    const endRaw = String(formData.get("dayEnd") || "");
+    const startMin = startRaw ? parseTimeToMinutes(startRaw) : inst.dayStartMin;
+    const endMin = endRaw ? parseTimeToMinutes(endRaw) : inst.dayEndMin;
+    if (startMin < 0 || endMin < 0) return { error: "Opening and closing times must be 24-hour times." };
     const updated = await updateInstitution({
       userId: user.id,
       institutionId: inst.id,
       name: String(formData.get("name") || ""),
       slug: String(formData.get("nextSlug") || ""),
       isPublic: formData.get("isPublic") === "on",
+      dayStartMin: startMin,
+      dayEndMin: endMin,
+      sundayOpen: formData.get("sundayOpen") === "on",
     });
     nextSlug = updated.slug;
     await bustTimetable(inst.id);
@@ -94,7 +112,7 @@ export async function roleAction(formData: FormData) {
       role: String(formData.get("role") || ""),
     });
   } catch (error) {
-    console.error("[role]", error);
+    redirectError(`/${slug}/manage/members`, error);
   }
   redirect(`/${slug}/manage/members`);
 }
@@ -110,7 +128,7 @@ export async function removeMemberAction(formData: FormData) {
       userId: String(formData.get("userId") || ""),
     });
   } catch (error) {
-    console.error("[member]", error);
+    redirectError(`/${slug}/manage/members`, error);
   }
   redirect(`/${slug}/manage/members`);
 }
@@ -132,37 +150,49 @@ export async function roomAction(_prev: ActionState, formData: FormData): Promis
   const slug = String(formData.get("slug") || "");
   try {
     const { inst } = await requireRole(slug, "ADMIN");
+    const floorRaw = String(formData.get("floor") || "");
     const parsed = RoomInput.safeParse({
       name: formData.get("name"),
       building: formData.get("building") || "",
       capacity: formData.get("capacity") || 60,
       isLab: formData.get("isLab") === "on",
+      floor: floorRaw,
+      hasProjector: formData.get("hasProjector") === "on",
+      hasSmartBoard: formData.get("hasSmartBoard") === "on",
+      hasAc: formData.get("hasAc") === "on",
     });
     if (!parsed.success) return { error: "Check the room details." };
     const id = String(formData.get("id") || "");
+    const key = roomKey(parsed.data.name);
+    const existing = await prisma.room.findMany({ where: { institutionId: inst.id } });
+    const clash = existing.find((room) => roomKey(room.name) === key && room.id !== id);
+    if (clash) {
+      const sameText = clash.name.toLowerCase() === parsed.data.name.toLowerCase();
+      return {
+        error: sameText
+          ? `${parsed.data.name} is already on the room list.`
+          : `${clash.name} is already listed. ${parsed.data.name} is the same room.`,
+      };
+    }
+    const floor = parsed.data.floor === "" || parsed.data.floor == null ? null : Number(parsed.data.floor);
+    const data = {
+      name: parsed.data.name,
+      building: parsed.data.building || null,
+      capacity: parsed.data.capacity,
+      isLab: parsed.data.isLab,
+      floor,
+      hasProjector: parsed.data.hasProjector,
+      hasSmartBoard: parsed.data.hasSmartBoard,
+      hasAc: parsed.data.hasAc,
+    };
     if (id) {
       const room = await prisma.room.findFirst({ where: { id, institutionId: inst.id } });
       if (!room) return { error: "Room not found." };
-      await prisma.room.update({
-        where: { id },
-        data: {
-          name: parsed.data.name,
-          building: parsed.data.building || null,
-          capacity: parsed.data.capacity,
-          isLab: parsed.data.isLab,
-        },
-      });
+      await prisma.room.update({ where: { id }, data });
     } else {
-      await prisma.room.create({
-        data: {
-          institutionId: inst.id,
-          name: parsed.data.name,
-          building: parsed.data.building || null,
-          capacity: parsed.data.capacity,
-          isLab: parsed.data.isLab,
-        },
-      });
+      await prisma.room.create({ data: { institutionId: inst.id, ...data } });
     }
+    await prisma.retiredRoom.deleteMany({ where: { institutionId: inst.id, roomKey: key } });
     await bustTimetable(inst.id);
   } catch (error) {
     return fromError(error);
@@ -174,10 +204,17 @@ export async function deleteRoomAction(formData: FormData) {
   const slug = String(formData.get("slug") || "");
   try {
     const { inst } = await requireRole(slug, "ADMIN");
-    await prisma.room.deleteMany({ where: { id: String(formData.get("id") || ""), institutionId: inst.id } });
+    const room = await prisma.room.findFirst({ where: { id: String(formData.get("id") || ""), institutionId: inst.id } });
+    if (!room) throw new HttpError(404, "Room not found.");
+    await prisma.retiredRoom.upsert({
+      where: { institutionId_roomKey: { institutionId: inst.id, roomKey: roomKey(room.name) } },
+      update: { name: room.name },
+      create: { institutionId: inst.id, roomKey: roomKey(room.name), name: room.name },
+    });
+    await prisma.room.delete({ where: { id: room.id } });
     await bustTimetable(inst.id);
   } catch (error) {
-    console.error("[room]", error);
+    redirectError(`/${slug}/manage/rooms`, error);
   }
   redirect(`/${slug}/manage/rooms`);
 }
@@ -195,6 +232,7 @@ export async function studentsAction(_prev: ActionState, formData: FormData): Pr
     const counts = countsFromCsv(text);
     if (!counts.length) return { error: "No section column was found. Names are not stored." };
     await replaceStrengths(inst.id, counts);
+    await bustTimetable(inst.id);
   } catch (error) {
     if (error instanceof CsvError) return { error: error.message };
     return fromError(error);

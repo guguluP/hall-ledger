@@ -45,6 +45,12 @@ export default async function InstitutionPage({ params }: { params: Promise<{ sl
           <h2 className="text-[17px] font-semibold">Share</h2>
           <p className="mt-1 break-all text-[14px] text-muted">{share}</p>
           {published.fileName && <p className="mt-2 text-[13px] text-subtle">{published.fileName}</p>}
+          <p className="mt-3 text-[13px] text-muted">
+            <a className="text-accent" href={`/api/i/${inst.slug}/calendar`}>Calendar feed</a>
+            {" · "}
+            <a className="text-accent" href={`/${inst.slug}/embed`}>Notice board</a>
+          </p>
+          <p className="mt-2 break-all text-[12px] text-subtle">{`<div data-hall-ledger="${inst.slug}"></div>`}</p>
         </div>
       </section>
     </AppShell>

@@ -39,6 +39,8 @@ export function AppShell({
           { href: `/${slug}/manage/upload`, label: "Upload", icon: Upload },
           { href: `/${slug}/manage/versions`, label: "Versions", icon: History },
           { href: `/${slug}/manage/rooms`, label: "Rooms", icon: Building2 },
+          { href: `/${slug}/manage/calendar`, label: "Calendar", icon: Calendar },
+          { href: `/${slug}/manage/usage`, label: "Usage", icon: LayoutDashboard },
           { href: `/${slug}/manage/members`, label: "Members", icon: Users },
           { href: `/${slug}/manage/students`, label: "Students", icon: Users },
           { href: `/${slug}/manage/settings`, label: "Settings", icon: Settings },

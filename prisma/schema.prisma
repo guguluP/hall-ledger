@@ -61,16 +61,27 @@ model LoginAttempt {
 }
 
 model Institution {
-  id          String            @id @default(cuid())
-  slug        String            @unique
-  name        String
-  isPublic    Boolean           @default(true)
-  createdAt   DateTime          @default(now())
-  memberships Membership[]
-  invites     Invite[]
-  rooms       Room[]
-  timetables  Timetable[]
-  strengths   SectionStrength[]
+  id            String            @id @default(cuid())
+  slug          String            @unique
+  name          String
+  isPublic      Boolean           @default(true)
+  dayStartMin   Int               @default(570)
+  dayEndMin     Int               @default(1050)
+  sundayOpen    Boolean           @default(false)
+  createdAt     DateTime          @default(now())
+  memberships   Membership[]
+  invites       Invite[]
+  rooms         Room[]
+  timetables    Timetable[]
+  strengths     SectionStrength[]
+  aliases       SlugAlias[]
+  retiredRooms  RetiredRoom[]
+  closures      Closure[]
+  changes       ScheduleChange[]
+  reports       CrowdReport[]
+  bookings      BookingRequest[]
+  observations  OccupancyNote[]
+  alertPrefs    AlertPreference[]
 }
 
 model Membership {
@@ -105,6 +116,10 @@ model Room {
   building      String?
   capacity      Int         @default(60)
   isLab         Boolean     @default(false)
+  floor         Int?
+  hasProjector  Boolean     @default(false)
+  hasSmartBoard Boolean     @default(false)
+  hasAc         Boolean     @default(false)
   institution   Institution @relation(fields: [institutionId], references: [id], onDelete: Cascade)
 
   @@unique([institutionId, name])
@@ -146,6 +161,7 @@ model Slot {
   section   String
   subject   String?
   type      String
+  teacher   String?
   dayOfWeek Int
   startMin  Int
   endMin    Int
@@ -174,4 +190,105 @@ model AuditLog {
   createdAt     DateTime @default(now())
 
   @@index([action, createdAt])
+}
+
+model SlugAlias {
+  slug          String      @id
+  institutionId String
+  createdAt     DateTime    @default(now())
+  institution   Institution @relation(fields: [institutionId], references: [id], onDelete: Cascade)
+}
+
+model RetiredRoom {
+  id            String      @id @default(cuid())
+  institutionId String
+  roomKey       String
+  name          String
+  institution   Institution @relation(fields: [institutionId], references: [id], onDelete: Cascade)
+
+  @@unique([institutionId, roomKey])
+}
+
+model Closure {
+  id            String      @id @default(cuid())
+  institutionId String
+  startDate     String
+  endDate       String
+  kind          String
+  label         String
+  institution   Institution @relation(fields: [institutionId], references: [id], onDelete: Cascade)
+
+  @@index([institutionId, startDate])
+}
+
+model ScheduleChange {
+  id            String      @id @default(cuid())
+  institutionId String
+  date          String
+  kind          String
+  section       String?
+  subject       String?
+  teacher       String?
+  roomName      String?
+  fromRoom      String?
+  startMin      Int
+  endMin        Int
+  note          String?
+  createdById   String
+  createdAt     DateTime    @default(now())
+  institution   Institution @relation(fields: [institutionId], references: [id], onDelete: Cascade)
+
+  @@index([institutionId, date])
+}
+
+model CrowdReport {
+  id            String      @id @default(cuid())
+  institutionId String
+  roomKey       String
+  roomName      String
+  kind          String
+  createdAt     DateTime    @default(now())
+  expiresAt     DateTime
+  institution   Institution @relation(fields: [institutionId], references: [id], onDelete: Cascade)
+
+  @@index([institutionId, expiresAt])
+}
+
+model BookingRequest {
+  id            String      @id @default(cuid())
+  institutionId String
+  roomName      String
+  date          String
+  startMin      Int
+  endMin        Int
+  purpose       String
+  requesterId   String
+  status        String      @default("PENDING")
+  createdAt     DateTime    @default(now())
+  institution   Institution @relation(fields: [institutionId], references: [id], onDelete: Cascade)
+
+  @@index([institutionId, status])
+}
+
+model OccupancyNote {
+  id            String      @id @default(cuid())
+  institutionId String
+  roomName      String
+  occupied      Boolean
+  headcount     Int?
+  observedAt    DateTime    @default(now())
+  source        String
+  createdById   String
+  institution   Institution @relation(fields: [institutionId], references: [id], onDelete: Cascade)
+
+  @@index([institutionId, observedAt])
+}
+
+model AlertPreference {
+  institutionId String
+  userId        String
+  email         Boolean     @default(true)
+  institution   Institution @relation(fields: [institutionId], references: [id], onDelete: Cascade)
+
+  @@id([institutionId, userId])
 }

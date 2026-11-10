@@ -11,7 +11,9 @@ export async function GET(_req: Request, ctx: { params: Promise<{ slug: string }
     const { slug } = await ctx.params;
     const inst = await requireVisible(slug);
     const published = await getPublished(inst.id);
-    return NextResponse.json(published);
+    const response = NextResponse.json(published);
+    if (inst.isPublic) response.headers.set("Access-Control-Allow-Origin", "*");
+    return response;
   } catch (error) {
     return apiError(error);
   }

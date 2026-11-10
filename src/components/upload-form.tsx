@@ -12,7 +12,9 @@ type Draft = {
   summary: { totalSections: number; totalSlots: number; totalConflicts: number };
   warnings: string[];
   hardConflicts: { day: string; time: string; room: string; sections: string[] }[];
+  clashes?: { type: string; day: string; time: string; sections: string[]; teacher?: string }[];
   fileName: string;
+  duplicate?: boolean;
 };
 
 function csrfToken() {
@@ -31,8 +33,8 @@ export function UploadForm({ slug }: { slug: string }) {
   const onDrop = useCallback((accepted: File[]) => {
     const next = accepted[0];
     if (!next) return;
-    if (!/\.(csv|tsv)$/i.test(next.name)) {
-      setError("Excel: File → Save As → CSV UTF-8. One file per section, or the tabular template.");
+    if (!/\.(csv|tsv|xlsx)$/i.test(next.name)) {
+      setError("Use a .csv, .tsv, or .xlsx file. Macros and password-protected workbooks are refused.");
       setStatus("error");
       return;
     }
@@ -63,7 +65,7 @@ export function UploadForm({ slug }: { slug: string }) {
     }
     setDraft(data);
     setStatus("ready");
-    push("Draft ready", `${data.summary.totalSlots} slots, ${data.summary.totalConflicts} conflicts.`, data.summary.totalConflicts ? "danger" : "ok");
+    push(data.duplicate ? "Existing draft" : "Draft ready", data.duplicate ? "This file is already a draft." : `${data.summary.totalSlots} slots, ${data.summary.totalConflicts} conflicts.`, data.summary.totalConflicts ? "danger" : "ok");
   }
 
   async function publish() {
@@ -92,7 +94,7 @@ export function UploadForm({ slug }: { slug: string }) {
   return (
     <>
       <p className="mb-4 max-w-xl text-[14px] text-muted">
-        Excel: File → Save As → CSV UTF-8. Use one file per section, or the tabular template with a Section column.
+        CSV, TSV, or a plain .xlsx sheet. Formulas are not run. Use one file per section, or the tabular template.
         Templates: <a className="underline" href="/samples/tabular-template.csv">tabular</a>, <a className="underline" href="/samples/timetable-template.csv">grid</a>.
       </p>
       <div
@@ -101,7 +103,7 @@ export function UploadForm({ slug }: { slug: string }) {
       >
         <input {...getInputProps()} aria-label="Timetable CSV" />
         <FileSpreadsheet className="mx-auto mb-3 h-8 w-8 text-muted" />
-        <p className="text-[15px] font-medium">{file ? file.name : "Drop a .csv or .tsv file"}</p>
+        <p className="text-[15px] font-medium">{file ? file.name : "Drop a .csv, .tsv, or .xlsx file"}</p>
       </div>
       {error && <p className="mb-4 text-[14px] text-danger">{error}</p>}
       <div className="mb-8 flex gap-2">
@@ -115,6 +117,8 @@ export function UploadForm({ slug }: { slug: string }) {
       </div>
       {draft && (
         <section className="space-y-4">
+          <p className="text-[14px]"><a className="text-accent" href={`/${slug}/manage/versions/${draft.versionId}`}>Preview what would change</a></p>
+          {draft.duplicate && <p className="text-[14px] text-muted">This file is already a draft, so a second copy was not created.</p>}
           <div className="grid grid-cols-3 gap-2">
             <Stat label="Slots" value={draft.summary.totalSlots} />
             <Stat label="Sections" value={draft.summary.totalSections} />
@@ -128,6 +132,16 @@ export function UploadForm({ slug }: { slug: string }) {
                   <li key={`${conflict.room}-${conflict.day}-${conflict.time}-${conflict.sections.join()}`}>
                     {conflict.room} · {conflict.day} {conflict.time} · {conflict.sections.join(", ")}
                   </li>
+                ))}
+              </ul>
+            </div>
+          )}
+          {(draft.clashes || []).length > 0 && (
+            <div className="rounded-2xl border border-border bg-surface p-4 text-[13px] text-muted">
+              <p className="mb-2 font-semibold text-fg">Teacher and section clashes</p>
+              <ul className="space-y-1">
+                {(draft.clashes || []).slice(0, 8).map((clash) => (
+                  <li key={`${clash.type}-${clash.day}-${clash.time}-${clash.sections.join()}`}>{clash.teacher || clash.sections.join(", ")} · {clash.day} {clash.time}</li>
                 ))}
               </ul>
             </div>

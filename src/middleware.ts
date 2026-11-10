@@ -34,7 +34,9 @@ export function middleware(req: NextRequest) {
       return NextResponse.json({ error: "Request blocked" }, { status: 403 });
     }
   }
-  const res = NextResponse.next();
+  const requestHeaders = new Headers(req.headers);
+  requestHeaders.set("x-hl-path", req.nextUrl.pathname + req.nextUrl.search);
+  const res = NextResponse.next({ request: { headers: requestHeaders } });
   if (req.cookies.get(SESSION_COOKIE)?.value && !req.cookies.get(CSRF_COOKIE)?.value) {
     res.cookies.set(CSRF_COOKIE, newCsrf(), {
       httpOnly: false,

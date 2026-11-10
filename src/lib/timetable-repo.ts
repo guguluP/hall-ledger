@@ -7,7 +7,8 @@ import { countAttempts, recordAttempt } from "@/lib/auth/rate-limit";
 import { decodeUtf8 } from "@/lib/parse/csv";
 import { detectHardConflicts, parseTimetableCsv, type SlotIn } from "@/lib/parse/timetable";
 import { DraftSlots } from "@/lib/schemas";
-import { buildingOf, isLabRoom } from "@/lib/rooms";
+import { isLabToken, roomKey } from "@/lib/rooms";
+import { notifyMembers } from "@/lib/notify";
 import { fromMinutes } from "@/lib/time";
 import type { Role } from "@/lib/auth/roles";
 
@@ -18,13 +19,24 @@ export type PublishedView = {
     classroomName: string;
     sectionName: string | null;
     subjectName: string | null;
+    teacherName?: string | null;
     dayOfWeek: number;
     startTime: string;
     endTime: string;
     startMin: number;
     endMin: number;
   }[];
-  rooms: { name: string; building: string | null; capacity: number; isLab: boolean }[];
+  rooms: {
+    name: string;
+    building: string | null;
+    capacity: number | null;
+    isLab: boolean;
+    floor: number | null;
+    hasProjector: boolean;
+    hasSmartBoard: boolean;
+    hasAc: boolean;
+  }[];
+  strengths: { section: string; students: number }[];
   stats: { slots: number; rooms: number; roomsInUse: number; sections: number; conflicts: number };
   source: "published" | "empty";
   fileName: string;
@@ -41,15 +53,26 @@ export async function loadPublishedView(institutionId: string): Promise<Publishe
     where: { institutionId },
     orderBy: { name: "asc" },
   });
+  const [strengths, retired] = await Promise.all([
+    prisma.sectionStrength.findMany({ where: { institutionId }, orderBy: { section: "asc" } }),
+    prisma.retiredRoom.findMany({ where: { institutionId }, select: { roomKey: true } }),
+  ]);
+  const strengthRows = strengths.map((row) => ({ section: row.section, students: row.students }));
+  const retiredKeys = new Set(retired.map((row) => row.roomKey));
   const roomRows = rooms.map((room) => ({
     name: room.name,
     building: room.building,
     capacity: room.capacity,
     isLab: room.isLab,
+    floor: room.floor,
+    hasProjector: room.hasProjector,
+    hasSmartBoard: room.hasSmartBoard,
+    hasAc: room.hasAc,
   }));
   const empty: PublishedView = {
     slots: [],
     rooms: roomRows,
+    strengths: strengthRows,
     stats: { slots: 0, rooms: roomRows.length, roomsInUse: 0, sections: 0, conflicts: 0 },
     source: "empty",
     fileName: "",
@@ -63,30 +86,37 @@ export async function loadPublishedView(institutionId: string): Promise<Publishe
   });
   if (!version || version.status !== "PUBLISHED" || version.timetableId !== timetable.id) return empty;
   const byId = new Map(rooms.map((room) => [room.id, room]));
-  const byName = new Map(rooms.map((room) => [room.name.toUpperCase(), room]));
-  const slots = version.slots.map((slot) => {
+  const byKey = new Map(rooms.map((room) => [roomKey(room.name), room]));
+  const slots = version.slots.flatMap((slot) => {
     const linked = slot.roomId ? byId.get(slot.roomId) : undefined;
-    const named = slot.roomName ? byName.get(slot.roomName.toUpperCase()) : undefined;
+    const named = slot.roomName ? byKey.get(roomKey(slot.roomName)) : undefined;
     const classroomName = linked?.name || named?.name || slot.roomName || "";
-    return {
-      classroomName,
+    const retiredName = Boolean(classroomName) && retiredKeys.has(roomKey(classroomName)) && !linked && !named;
+    return [{
+      classroomName: retiredName ? "" : classroomName,
       sectionName: slot.section,
       subjectName: slot.subject,
+      teacherName: slot.teacher,
       dayOfWeek: slot.dayOfWeek,
       startTime: fromMinutes(slot.startMin),
       endTime: fromMinutes(slot.endMin === 1440 ? 0 : slot.endMin),
       startMin: slot.startMin,
       endMin: slot.endMin,
-    };
+    }];
   });
-  const listed = new Map(roomRows.map((room) => [room.name.toUpperCase(), room]));
+  const listed = new Map<string, PublishedView["rooms"][number]>(roomRows.map((room) => [roomKey(room.name), room]));
   for (const slot of slots) {
-    if (!slot.classroomName || listed.has(slot.classroomName.toUpperCase())) continue;
-    listed.set(slot.classroomName.toUpperCase(), {
+    const key = roomKey(slot.classroomName);
+    if (!key || listed.has(key) || retiredKeys.has(key)) continue;
+    listed.set(key, {
       name: slot.classroomName,
-      building: buildingOf(slot.classroomName),
-      capacity: 60,
-      isLab: isLabRoom(slot.classroomName),
+      building: null,
+      capacity: null,
+      isLab: isLabToken(slot.classroomName),
+      floor: null,
+      hasProjector: false,
+      hasSmartBoard: false,
+      hasAc: false,
     });
   }
   const visibleRooms = [...listed.values()];
@@ -94,6 +124,7 @@ export async function loadPublishedView(institutionId: string): Promise<Publishe
   return {
     slots,
     rooms: visibleRooms,
+    strengths: strengthRows,
     stats: {
       slots: slots.length,
       rooms: visibleRooms.length,
@@ -176,9 +207,27 @@ export async function createDraft(opts: {
   if (!checked.success) throw new HttpError(400, "The timetable could not be validated.");
   if (!checked.data.length) throw new HttpError(422, "No classes were found in that file.");
 
-  const byName = new Map(rooms.map((room) => [room.name.toUpperCase(), room.id]));
+  const byName = new Map(rooms.map((room) => [roomKey(room.name), room.id]));
   const timetable = await mainTimetable(opts.institutionId);
   const fileSha256 = createHash("sha256").update(opts.bytes).digest("hex");
+  const existing = await prisma.timetableVersion.findFirst({
+    where: { timetableId: timetable.id, status: "DRAFT", fileSha256 },
+  });
+  if (existing) {
+    return {
+      versionId: existing.id,
+      duplicate: true,
+      summary: {
+        totalSections: new Set(checked.data.map((slot) => slot.section)).size,
+        totalSlots: checked.data.length,
+        totalConflicts: parsed.hardConflicts.length,
+      },
+      warnings: parsed.warnings,
+      hardConflicts: parsed.hardConflicts.slice(0, 50),
+      clashes: parsed.clashes.slice(0, 50),
+      fileName: existing.fileName || opts.fileName,
+    };
+  }
   const version = await prisma.timetableVersion.create({
     data: {
       timetableId: timetable.id,
@@ -192,10 +241,11 @@ export async function createDraft(opts: {
   });
   const rows = checked.data.map((slot) => ({
     versionId: version.id,
-    roomId: slot.room ? byName.get(slot.room.toUpperCase()) || null : null,
+    roomId: slot.room ? byName.get(roomKey(slot.room)) || null : null,
     roomName: slot.room,
     section: slot.section,
     subject: slot.subject,
+    teacher: slot.teacher || null,
     type: slot.type,
     dayOfWeek: slot.dayOfWeek,
     startMin: slot.startMin,
@@ -214,7 +264,9 @@ export async function createDraft(opts: {
     },
     warnings: parsed.warnings,
     hardConflicts: parsed.hardConflicts.slice(0, 50),
+    clashes: parsed.clashes.slice(0, 50),
     fileName: opts.fileName,
+    duplicate: false,
   };
 }
 
@@ -252,6 +304,15 @@ export async function publishVersionFor(opts: {
   }));
   await audit("publish", { userId: opts.userId, institutionId: opts.institutionId, details: opts.versionId });
   await bustTimetable(opts.institutionId);
+  const inst = await prisma.institution.findUnique({ where: { id: opts.institutionId }, select: { slug: true, name: true } });
+  if (inst) {
+    await notifyMembers(
+      opts.institutionId,
+      `${inst.name} timetable was published`,
+      `The live timetable for ${inst.name} changed.`,
+      `/${inst.slug}/timetable`,
+    );
+  }
 }
 
 export async function listVersions(institutionId: string) {

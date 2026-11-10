@@ -3,6 +3,7 @@ import { requireRole } from "@/lib/auth/authz";
 import { isRole, RANK } from "@/lib/auth/roles";
 import { listVersions } from "@/lib/timetable-repo";
 import { shellData } from "@/lib/shell";
+import Link from "next/link";
 import { PublishButton } from "./publish-button";
 
 export const dynamic = "force-dynamic";
@@ -21,7 +22,10 @@ export default async function VersionsPage({ params }: { params: Promise<{ slug:
               <p className="text-[14px] font-semibold">{version.fileName || "Untitled"} · {version.status}{version.active ? " · live" : ""}</p>
               <p className="text-[12px] text-muted">{version.conflictCount} conflicts · {new Date(version.createdAt).toLocaleString()}</p>
             </div>
-            {canPublish && version.status !== "PUBLISHED" && <PublishButton slug={slug} id={version.id} />}
+            <div className="flex items-center gap-3">
+              <Link href={`/${slug}/manage/versions/${version.id}`} className="text-[13px] font-medium text-accent">Preview</Link>
+              {canPublish && version.status !== "PUBLISHED" && <PublishButton slug={slug} id={version.id} />}
+            </div>
           </li>
         ))}
         {versions.length === 0 && <li className="text-[14px] text-muted">No drafts yet.</li>}

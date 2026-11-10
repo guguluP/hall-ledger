@@ -44,6 +44,7 @@ export const SlotIn = z
       .max(20)
       .regex(/^[A-Za-z0-9 -]+$/)
       .nullable(),
+    teacher: z.string().trim().max(80).nullable().optional(),
     type: z.string().max(20),
     dayOfWeek: Day,
     startMin: z.number().int().min(0).max(1439),
@@ -81,7 +82,21 @@ export const RoomInput = z.object({
   building: z.string().trim().max(40).optional().or(z.literal("")),
   capacity: z.coerce.number().int().min(1).max(500),
   isLab: z.boolean().default(false),
+  floor: z.union([z.literal(""), z.coerce.number().int().min(0).max(30)]).optional(),
+  hasProjector: z.boolean().default(false),
+  hasSmartBoard: z.boolean().default(false),
+  hasAc: z.boolean().default(false),
 });
+
+export const VacancyCounts = z.object({
+  total: z.number().int().nonnegative(),
+  free: z.number().int().nonnegative(),
+  occupied: z.number().int().nonnegative(),
+});
+
+export function vacancyCounts(pool: number, free: number) {
+  return { total: pool, free, occupied: Math.max(0, pool - free) };
+}
 
 export function zodFields(error: z.ZodError) {
   const fields: Record<string, string> = {};
